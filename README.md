@@ -21,3 +21,15 @@ You can use the following modes when building the extension.
 2. production - `https://teams.splits.org`
 3. staging - `https://teams.staging.splits.org`
 4. testing - `https://teams.testing.splits.org`
+
+## Release
+
+Firstly, update the version in the `package.json` file.
+
+To release the extension, you can use the following command.
+
+```bash
+pnpm zip:all
+```
+
+This will create a folder for each environment in the `.output` directory. You can then upload the compressed files to the github releases page for that release version. For reference, see the [releases page](https://github.com/0xSplits/splits-connect/releases).
