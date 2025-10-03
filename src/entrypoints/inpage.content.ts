@@ -3,6 +3,7 @@ import { Dialog, Mode, Porto } from "porto";
 
 export default defineContentScript({
   main() {
+    console.log(import.meta.env.VITE_HOST_URL);
     const porto = Porto.create({
       announceProvider: {
         name: "Splits Connect",
@@ -11,8 +12,7 @@ export default defineContentScript({
         icon: splitsImage,
       },
       mode: Mode.dialog({
-        // TODO: update this to be controlled by env or build param
-        host: "http://localhost:3001/connect/",
+        host: `${import.meta.env.VITE_HOST_URL}/connect/`,
         renderer: Dialog.popup(),
       }),
     });
