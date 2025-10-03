@@ -1,18 +1,18 @@
 import { splitsImage } from "@/utils/image";
+import { getHost, getName } from "../../utils";
 import { Dialog, Mode, Porto } from "porto";
 
 export default defineContentScript({
   main() {
-    console.log(import.meta.env.VITE_HOST_URL);
     const porto = Porto.create({
       announceProvider: {
-        name: "Splits Connect",
+        name: getName(import.meta.env.MODE),
         rdns: "org.splits.teams.connect",
         uuid: "9a99c6cc-732e-4089-a0e0-f0366b641f60",
         icon: splitsImage,
       },
       mode: Mode.dialog({
-        host: `${import.meta.env.VITE_HOST_URL}/connect/`,
+        host: `${getHost(import.meta.env.MODE)}/connect/`,
         renderer: Dialog.popup(),
       }),
     });

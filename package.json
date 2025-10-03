@@ -9,6 +9,11 @@
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
+    "zip:all": "pnpm zip:dev && pnpm zip:production && pnpm zip:staging && pnpm zip:testing",
+    "zip:dev": "wxt zip --mode dev",
+    "zip:production": "wxt zip --mode production",
+    "zip:staging": "wxt zip --mode staging",
+    "zip:testing": "wxt zip --mode testing",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
