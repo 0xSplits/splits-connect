@@ -13,7 +13,12 @@ export default defineContentScript({
       },
       mode: Mode.dialog({
         host: `${getHost(import.meta.env.MODE)}/connect/`,
-        renderer: Dialog.popup(),
+        renderer: Dialog.popup({
+          size: {
+            width: 450,
+            height: 650,
+          },
+        }),
       }),
     });
     (window as any).ethereum = porto.provider;
