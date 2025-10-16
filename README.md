@@ -22,6 +22,8 @@ You can use the following modes when building the extension.
 3. staging - `https://teams.staging.splits.org`
 4. testing - `https://teams.testing.splits.org`
 
+note: Make sure to update the `.env` file with the correct values as seen in the `.env.sample` file.
+
 ## Release
 
 Firstly, update the version in the `package.json` file.
