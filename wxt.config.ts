@@ -8,7 +8,9 @@ export default defineConfig({
       name: getName(mode),
       permissions: ["contextMenus", "tabs", "storage", "scripting"],
       host_permissions: ["*"],
-      action: { default_title: getName(mode) },
+      action: {
+        default_title: getName(mode),
+      },
       // Allow your domain to message the extension
       externally_connectable: {
         matches: [`${getHost(mode)}/*`],

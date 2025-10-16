@@ -1,5 +1,5 @@
 import { splitsImage } from "@/utils/image";
-import { getHost, getName } from "../../utils";
+import { getHost, getName, getUUID } from "../../utils";
 import { Dialog, Mode, Porto } from "porto";
 
 export default defineContentScript({
@@ -8,7 +8,7 @@ export default defineContentScript({
       announceProvider: {
         name: getName(import.meta.env.MODE),
         rdns: "org.splits.teams.connect",
-        uuid: "9a99c6cc-732e-4089-a0e0-f0366b641f60",
+        uuid: getUUID(import.meta.env.MODE),
         icon: splitsImage,
       },
       mode: Mode.dialog({
