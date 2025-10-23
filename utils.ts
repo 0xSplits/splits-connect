@@ -1,4 +1,5 @@
 import { v5 as uuid } from "uuid";
+import { http } from "viem";
 
 export const getHost = (mode: string) => {
   switch (mode) {
@@ -8,6 +9,15 @@ export const getHost = (mode: string) => {
       return "http://localhost:3001";
     default:
       return `https://teams.${mode}.splits.org`;
+  }
+};
+
+export const getRelay = (mode: string) => {
+  switch (mode) {
+    case "dev":
+      return http("http://localhost:8080");
+    default:
+      return http(`https://server.${mode}.splits.org/public/connect`);
   }
 };
 
