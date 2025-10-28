@@ -15,9 +15,9 @@ export const getHost = (mode: string) => {
 export const getRelay = (mode: string) => {
   switch (mode) {
     case "dev":
-      return http("http://localhost:8080");
+      return http("http://localhost:8080/public/v1/connect");
     default:
-      return http(`https://server.${mode}.splits.org/public/connect`);
+      return http(`https://server.${mode}.splits.org/public/v1/connect`);
   }
 };
 

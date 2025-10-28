@@ -1,5 +1,5 @@
 import { splitsImage } from "@/utils/image";
-import { getHost, getName, getUUID } from "../../utils";
+import { getHost, getName, getRelay, getUUID } from "../../utils";
 import { Dialog, Mode, Porto } from "porto";
 
 export default defineContentScript({
@@ -20,6 +20,7 @@ export default defineContentScript({
           },
         }),
       }),
+      relay: getRelay(import.meta.env.MODE),
     });
     (window as any).ethereum = porto.provider;
 
