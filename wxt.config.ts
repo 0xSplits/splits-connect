@@ -8,6 +8,7 @@ export default defineConfig({
       name: getName(mode),
       permissions: ["contextMenus", "tabs", "storage", "scripting"],
       host_permissions: ["https://*/*"],
+      description: "An extension to connect any app to Splits Teams.",
       action: {
         default_title: getName(mode),
       },
