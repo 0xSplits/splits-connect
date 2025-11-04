@@ -7,7 +7,7 @@ export default defineConfig({
     return {
       name: getName(mode),
       permissions: ["contextMenus", "tabs", "storage", "scripting"],
-      host_permissions: ["*"],
+      host_permissions: ["https://*/*"],
       action: {
         default_title: getName(mode),
       },
