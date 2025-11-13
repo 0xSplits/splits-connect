@@ -26,6 +26,7 @@ export default defineContentScript({
     let provider: ReturnType<typeof Porto.create>["provider"] | null = null;
     let porto: ReturnType<typeof Porto.create> | null = null;
     let destroyed = false;
+    let initializing: Promise<void> | null = null;
 
     const handleRequest = (event: MessageEvent) => {
       if (event.source !== window) return;
@@ -36,6 +37,7 @@ export default defineContentScript({
       if (!isBridgeRequestMessage(event.data)) return;
       if (!provider) {
         pendingUntilReady.push(event.data);
+        void ensurePortoInitialized();
         return;
       }
       void processRequest(event.data);
@@ -102,37 +104,6 @@ export default defineContentScript({
     window.addEventListener("message", handleRequest);
     postBridgeReady();
 
-    await waitForDocumentReady();
-    if (destroyed) return;
-
-    const providerInfo = getProviderInfo(import.meta.env.MODE);
-
-    porto = Porto.create({
-      announceProvider: providerInfo,
-      mode: Mode.dialog({
-        host: `${getHost(import.meta.env.MODE)}/connect/`,
-        renderer: Dialog.popup({
-          size: {
-            height: 650,
-            width: 450,
-          },
-        }),
-      }),
-      relay: getRelay(import.meta.env.MODE),
-    });
-    provider = porto.provider;
-    const activeProvider = provider;
-    if (activeProvider) {
-      eventHandlers.forEach(([eventName, handler]) => {
-        activeProvider.on(eventName, handler as (...args: any[]) => void);
-      });
-    }
-    while (pendingUntilReady.length > 0) {
-      const queued = pendingUntilReady.shift();
-      if (!queued) continue;
-      void processRequest(queued);
-    }
-
     const cleanup = () => {
       if (destroyed) return;
       destroyed = true;
@@ -169,6 +140,47 @@ export default defineContentScript({
           "*"
         );
     });
+
+    async function ensurePortoInitialized() {
+      if (provider || destroyed) return;
+      if (initializing) {
+        await initializing;
+        return;
+      }
+      initializing = (async () => {
+        await waitForDocumentReady();
+        if (destroyed || provider) return;
+
+        const providerInfo = getProviderInfo(import.meta.env.MODE);
+        porto = Porto.create({
+          announceProvider: providerInfo,
+          mode: Mode.dialog({
+            host: `${getHost(import.meta.env.MODE)}/connect/`,
+            renderer: Dialog.popup({
+              size: {
+                height: 650,
+                width: 450,
+              },
+            }),
+          }),
+          relay: getRelay(import.meta.env.MODE),
+        });
+        provider = porto.provider;
+        eventHandlers.forEach(([eventName, handler]) => {
+          provider?.on(eventName, handler as (...args: any[]) => void);
+        });
+        while (pendingUntilReady.length > 0) {
+          const queued = pendingUntilReady.shift();
+          if (!queued) continue;
+          void processRequest(queued);
+        }
+      })();
+      try {
+        await initializing;
+      } finally {
+        initializing = null;
+      }
+    }
   },
   matches: ["https://*/*", "http://localhost/*"],
   runAt: "document_start",
