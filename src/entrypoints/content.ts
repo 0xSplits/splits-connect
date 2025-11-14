@@ -10,6 +10,16 @@ import {
   type BridgeSerializedError,
 } from "@/utils/bridge";
 import { getProviderInfo } from "@/utils/provider-info";
+import {
+  LARGE_RPC_METHODS,
+  RPC_MAX_INLINE_CHARS,
+  RPC_STORAGE_KEY_PREFIX,
+  RPC_STORAGE_TTL_MS,
+  RpcStorageEntry,
+  createRpcStorageKey,
+  createRpcToken,
+  encodeRpcDataPlaceholder,
+} from "@/utils/rpc-storage";
 import { Dialog, Mode, Porto } from "porto";
 import { getHost, getRelay } from "../../utils";
 
@@ -46,7 +56,8 @@ export default defineContentScript({
     const processRequest = async (message: BridgeRequestMessage) => {
       try {
         if (!provider) throw new Error("Provider not ready");
-        const result = await provider.request(message.payload);
+        const normalizedPayload = await maybeOffloadLargeRpc(message.payload);
+        const result = await provider.request(normalizedPayload);
         postResponse(message.id, { result });
       } catch (error) {
         postResponse(message.id, { error: serializeError(error) });
@@ -92,14 +103,15 @@ export default defineContentScript({
         );
       };
 
-    const eventHandlers: Array<[ProviderEventName, (payload: unknown) => void]> =
-      [
-        ["accountsChanged", forwardEvent("accountsChanged")],
-        ["chainChanged", forwardEvent("chainChanged")],
-        ["connect", forwardEvent("connect")],
-        ["disconnect", forwardEvent("disconnect")],
-        ["message", forwardEvent("message")],
-      ];
+    const eventHandlers: Array<
+      [ProviderEventName, (payload: unknown) => void]
+    > = [
+      ["accountsChanged", forwardEvent("accountsChanged")],
+      ["chainChanged", forwardEvent("chainChanged")],
+      ["connect", forwardEvent("connect")],
+      ["disconnect", forwardEvent("disconnect")],
+      ["message", forwardEvent("message")],
+    ];
 
     window.addEventListener("message", handleRequest);
     postBridgeReady();
@@ -214,4 +226,62 @@ function waitForDocumentReady(): Promise<void> {
       once: true,
     });
   });
+}
+
+async function maybeOffloadLargeRpc(payload: BridgeRequestMessage["payload"]) {
+  try {
+    if (!LARGE_RPC_METHODS.has(payload.method)) return payload;
+    const params = Array.isArray(payload.params) ? payload.params : [];
+    if (params.length === 0) return payload;
+    const updatedParams: unknown[] = [];
+    let mutated = false;
+    for (const param of params) {
+      if (!param || typeof param !== "object" || Array.isArray(param)) {
+        updatedParams.push(param);
+        continue;
+      }
+      const tx = { ...(param as Record<string, unknown>) };
+      const data = tx.data;
+      if (typeof data === "string" && data.length > RPC_MAX_INLINE_CHARS) {
+        if (!mutated) await cleanupExpiredRpcEntries();
+        const token = await storeRpcPayload(data);
+        tx.data = encodeRpcDataPlaceholder(browser.runtime.id, token);
+        mutated = true;
+      }
+      updatedParams.push(tx);
+    }
+    if (!mutated) return payload;
+    return {
+      ...payload,
+      params: updatedParams,
+    };
+  } catch {
+    return payload;
+  }
+}
+
+async function storeRpcPayload(serialized: string) {
+  const token = createRpcToken();
+  const storageKey = createRpcStorageKey(token);
+  const entry: RpcStorageEntry = {
+    createdAt: Date.now(),
+    value: serialized,
+  };
+  await browser.storage.local.set({
+    [storageKey]: entry,
+  });
+  return token;
+}
+
+async function cleanupExpiredRpcEntries() {
+  const all = await browser.storage.local.get(null);
+  const expired: string[] = [];
+  const now = Date.now();
+  for (const [key, value] of Object.entries(all)) {
+    if (!key.startsWith(RPC_STORAGE_KEY_PREFIX)) continue;
+    const entry = value as RpcStorageEntry | undefined;
+    if (!entry) continue;
+    if (now - entry.createdAt > RPC_STORAGE_TTL_MS) expired.push(key);
+  }
+  if (expired.length > 0) await browser.storage.local.remove(expired);
 }
