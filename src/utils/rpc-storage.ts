@@ -1,7 +1,6 @@
 export const RPC_STORAGE_KEY_PREFIX = "splits:rpc:";
 export const RPC_STORAGE_MESSAGE_TYPE = "splits-connect:getStoredRpcPayload";
-export const RPC_STORAGE_TTL_MS = 5 * 60 * 1000; // 5 minutes.
-export const RPC_MAX_INLINE_CHARS = 4000;
+export const RPC_STORAGE_TTL_MS = 5 * 60 * 1000; // 5 minutes.–
 export const RPC_DATA_PLACEHOLDER_PREFIX = "0xsplitsconnectkey:";
 
 export type RpcStorageEntry = {
@@ -9,7 +8,10 @@ export type RpcStorageEntry = {
   createdAt: number;
 };
 
-export const LARGE_RPC_METHODS = new Set(["eth_sendTransaction"]);
+export const LARGE_RPC_METHODS = new Set([
+  "eth_sendTransaction",
+  "wallet_sendCalls",
+]);
 
 export function createRpcToken() {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -23,7 +25,6 @@ export function createRpcStorageKey(token: string) {
 }
 
 export function encodeRpcDataPlaceholder(extensionId: string, token: string) {
-  console.log({ extensionId, token });
   return `${RPC_DATA_PLACEHOLDER_PREFIX}${extensionId}:${token}`;
 }
 

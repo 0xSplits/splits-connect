@@ -2,7 +2,6 @@ import {
   MESSAGE_SOURCE_CONTENT,
   MESSAGE_TYPE_EVENT,
   MESSAGE_TYPE_READY,
-  MESSAGE_TYPE_READY_REQUEST,
   MESSAGE_TYPE_RESPONSE,
   isBridgeReadyRequestMessage,
   isBridgeRequestMessage,
@@ -12,7 +11,6 @@ import {
 import { getProviderInfo } from "@/utils/provider-info";
 import {
   LARGE_RPC_METHODS,
-  RPC_MAX_INLINE_CHARS,
   RPC_STORAGE_KEY_PREFIX,
   RPC_STORAGE_TTL_MS,
   RpcStorageEntry,
@@ -231,33 +229,66 @@ function waitForDocumentReady(): Promise<void> {
 async function maybeOffloadLargeRpc(payload: BridgeRequestMessage["payload"]) {
   try {
     if (!LARGE_RPC_METHODS.has(payload.method)) return payload;
-    const params = Array.isArray(payload.params) ? payload.params : [];
-    if (params.length === 0) return payload;
-    const updatedParams: unknown[] = [];
-    let mutated = false;
-    for (const param of params) {
-      if (!param || typeof param !== "object" || Array.isArray(param)) {
-        updatedParams.push(param);
-        continue;
-      }
-      const tx = { ...(param as Record<string, unknown>) };
-      const data = tx.data;
-      if (typeof data === "string" && data.length > RPC_MAX_INLINE_CHARS) {
-        if (!mutated) await cleanupExpiredRpcEntries();
-        const token = await storeRpcPayload(data);
-        tx.data = encodeRpcDataPlaceholder(browser.runtime.id, token);
-        mutated = true;
-      }
-      updatedParams.push(tx);
-    }
+    const params = payload.params;
+    if (params === undefined) return payload;
+
+    const { value: normalizedParams, mutated } = await maybeOffloadRpcValue(
+      payload.method,
+      params
+    );
     if (!mutated) return payload;
     return {
       ...payload,
-      params: updatedParams,
+      params: normalizedParams as BridgeRequestMessage["payload"]["params"],
     };
   } catch {
     return payload;
   }
+}
+
+async function maybeOffloadRpcValue(
+  method: string,
+  value: unknown
+): Promise<{ value: unknown; mutated: boolean }> {
+  await cleanupExpiredRpcEntries();
+
+  if (method === "eth_sendTransaction") {
+    if (!Array.isArray(value)) return { value, mutated: false };
+
+    const params = value[0] as Record<string, unknown>;
+
+    const data = params.data as string;
+
+    if (data.length === 0) return { value, mutated: false };
+
+    const token = await storeRpcPayload(data);
+
+    params.data = encodeRpcDataPlaceholder(browser.runtime.id, token);
+
+    return { value: [params], mutated: true };
+  } else if (method === "wallet_sendCalls") {
+    if (!Array.isArray(value)) return { value, mutated: false };
+
+    const params = value[0] as Record<string, unknown>;
+
+    const calls = params.calls as { to: string; value: string; data: string }[];
+
+    const data = JSON.stringify({ calls });
+
+    if (data.length === 0) return { value, mutated: false };
+    const token = await storeRpcPayload(data);
+    params.calls = [
+      {
+        to: calls[0].to,
+        data: encodeRpcDataPlaceholder(browser.runtime.id, token),
+        value: calls[0].value,
+      },
+    ];
+
+    return { value: [params], mutated: true };
+  }
+
+  return { value, mutated: false };
 }
 
 async function storeRpcPayload(serialized: string) {

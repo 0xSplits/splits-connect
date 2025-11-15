@@ -35,7 +35,6 @@ namespace RpcStorageBridge {
   >[1];
 
   export function register() {
-    console.log("registering");
     browser.runtime.onMessageExternal.addListener(handleExternalMessage);
   }
 
@@ -44,12 +43,10 @@ namespace RpcStorageBridge {
     sender: MessageSender,
     sendResponse: (response: unknown) => void
   ) {
-    console.log({ message, sender });
     if (!isStorageRequest(message)) return undefined;
     if (!isAllowedSender(sender)) return { ok: false };
     const token = (message as { token?: string }).token;
     if (!token) return { ok: false };
-    console.log({ token });
     const result = await fetchStoredPayload(token);
     sendResponse(result);
     return result;
@@ -83,7 +80,6 @@ namespace RpcStorageBridge {
     await browser.storage.local.remove(storageKey);
     if (!entry) return { ok: false };
     if (Date.now() - entry.createdAt > RPC_STORAGE_TTL_MS) return { ok: false };
-    console.log({ entry });
     return {
       ok: true,
       value: entry.value,
