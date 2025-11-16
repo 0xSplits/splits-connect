@@ -1,7 +1,7 @@
 {
   "name": "Splits Connect",
   "description": "An extension to connect any app to Splits Teams",
-  "version": "0.5",
+  "version": "0.6",
   "type": "module",
   "scripts": {
     "dev": "wxt --mode dev",
