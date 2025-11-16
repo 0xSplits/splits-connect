@@ -1,8 +1,6 @@
 import {
   RPC_STORAGE_MESSAGE_TYPE,
-  RPC_STORAGE_TTL_MS,
-  RpcStorageEntry,
-  createRpcStorageKey,
+  consumeRpcPayload,
 } from "@/utils/rpc-storage";
 import { getHost } from "../../utils";
 
@@ -71,18 +69,8 @@ namespace RpcStorageBridge {
   }
 
   async function fetchStoredPayload(token: string) {
-    const storageKey = createRpcStorageKey(token);
-    const stored = (await browser.storage.local.get(storageKey)) as Record<
-      string,
-      RpcStorageEntry | undefined
-    >;
-    const entry = stored[storageKey];
-    await browser.storage.local.remove(storageKey);
-    if (!entry) return { ok: false };
-    if (Date.now() - entry.createdAt > RPC_STORAGE_TTL_MS) return { ok: false };
-    return {
-      ok: true,
-      value: entry.value,
-    };
+    const value = await consumeRpcPayload(token);
+    if (!value) return { ok: false };
+    return { ok: true, value };
   }
 }

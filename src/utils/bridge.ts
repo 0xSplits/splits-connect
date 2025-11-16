@@ -107,8 +107,7 @@ export function isBridgeReadyRequestMessage(
   return (
     typeof data === "object" &&
     data !== null &&
-    (data as BridgeReadyRequestMessage).type ===
-      MESSAGE_TYPE_READY_REQUEST &&
+    (data as BridgeReadyRequestMessage).type === MESSAGE_TYPE_READY_REQUEST &&
     (data as BridgeReadyRequestMessage).source === MESSAGE_SOURCE_INPAGE
   );
 }
