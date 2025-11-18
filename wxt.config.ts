@@ -6,7 +6,7 @@ export default defineConfig({
   manifest: ({ mode }) => {
     return {
       name: getName(mode),
-      permissions: ["contextMenus", "tabs", "storage", "scripting"],
+      permissions: ["contextMenus", "tabs", "storage"],
       host_permissions: ["https://*/*"],
       description: "An extension to connect any app to Splits Teams.",
       action: {
