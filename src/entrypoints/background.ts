@@ -36,18 +36,26 @@ namespace RpcStorageBridge {
     browser.runtime.onMessageExternal.addListener(handleExternalMessage);
   }
 
-  async function handleExternalMessage(
+  function handleExternalMessage(
     message: unknown,
     sender: MessageSender,
     sendResponse: (response: unknown) => void
   ) {
     if (!isStorageRequest(message)) return undefined;
-    if (!isAllowedSender(sender)) return { ok: false };
+    if (!isAllowedSender(sender)) {
+      sendResponse({ ok: false });
+      return undefined;
+    }
     const token = (message as { token?: string }).token;
-    if (!token) return { ok: false };
-    const result = await fetchStoredPayload(token);
-    sendResponse(result);
-    return result;
+    if (!token) {
+      sendResponse({ ok: false });
+      return undefined;
+    }
+    // Keep the message channel open for browsers that still rely on sendResponse.
+    void fetchStoredPayload(token)
+      .then((result) => sendResponse(result))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
   }
 
   function isStorageRequest(message: unknown) {
@@ -59,13 +67,23 @@ namespace RpcStorageBridge {
   }
 
   function isAllowedSender(sender: MessageSender) {
-    if (!sender.url) return false;
-    try {
-      const senderOrigin = new URL(sender.url).origin;
-      return senderOrigin === allowedOrigin;
-    } catch {
-      return false;
+    const senderOrigin = getSenderOrigin(sender);
+    if (!senderOrigin) return false;
+    return senderOrigin === allowedOrigin;
+  }
+
+  function getSenderOrigin(sender: MessageSender) {
+    if (typeof sender.origin === "string" && sender.origin.length > 0) {
+      return sender.origin;
     }
+    if (typeof sender.url === "string" && sender.url.length > 0) {
+      try {
+        return new URL(sender.url).origin;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   async function fetchStoredPayload(token: string) {
