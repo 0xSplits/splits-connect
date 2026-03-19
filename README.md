@@ -10,9 +10,11 @@ The extension is built using [wxt](https://wxt.dev/) and [porto](https://porto.s
 
 Installs dependencies and launches a new chrome instances with the extension installed and ready to use.
 
+note: Make sure to update the `.env` file with the correct values as seen in the `.env.sample` file.
+
 ```bash
 pnpm install
-pnpm dev --mode dev
+pnpm dev
 ```
 
 You can use the following modes when building the extension.
@@ -21,8 +23,6 @@ You can use the following modes when building the extension.
 2. production - `https://teams.splits.org`
 3. staging - `https://teams.staging.splits.org`
 4. testing - `https://teams.testing.splits.org`
-
-note: Make sure to update the `.env` file with the correct values as seen in the `.env.sample` file.
 
 ## Release
 
