@@ -178,10 +178,15 @@ class ContentBridge {
     const currentProvider = this.provider;
     if (!currentProvider) return;
     this.eventHandlers.forEach(([eventName, handler]) => {
-      currentProvider.removeListener(
-        eventName,
-        handler as (...args: any[]) => void,
-      );
+      try {
+        currentProvider?.removeListener(
+          eventName,
+          handler as (...args: any[]) => void
+        );
+      } catch {
+        // Ignore errors during cleanup — the provider may be in an
+        // indeterminate state (e.g. window unload before full init).
+      }
     });
   }
 
