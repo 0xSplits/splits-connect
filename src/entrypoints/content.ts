@@ -8,10 +8,14 @@ import {
   type BridgeRequestMessage,
   type BridgeSerializedError,
 } from "@/utils/bridge";
-import { PROVIDER_EVENTS, type ProviderEventName } from "@/utils/provider-events";
+import {
+  PROVIDER_EVENTS,
+  type ProviderEventName,
+} from "@/utils/provider-events";
 import { getProviderInfo } from "@/utils/provider-info";
 import { maybeOffloadLargeRpc } from "@/utils/rpc-offload";
-import { Dialog, Mode, Porto } from "porto";
+import { Chains, Dialog, Mode, Porto } from "@splits/porto";
+import { tempo, worldchain } from "viem/chains";
 import { getHost, getRelay } from "../../utils";
 
 export default defineContentScript({
@@ -60,7 +64,7 @@ class ContentBridge {
         {
           event: "trigger-reload",
         },
-        "*"
+        "*",
       );
     }
   };
@@ -90,7 +94,7 @@ class ContentBridge {
       if (!this.provider) throw new Error("Provider not ready");
       const normalizedPayload = await maybeOffloadLargeRpc(
         browser.runtime.id,
-        message.payload
+        message.payload,
       );
       const result = await this.provider.request(normalizedPayload);
       this.postResponse(message.id, { result });
@@ -101,7 +105,7 @@ class ContentBridge {
 
   private postResponse(
     id: string,
-    payload: { result?: unknown; error?: BridgeSerializedError }
+    payload: { result?: unknown; error?: BridgeSerializedError },
   ) {
     this.targetWindow.postMessage(
       {
@@ -110,7 +114,7 @@ class ContentBridge {
         source: MESSAGE_SOURCE_CONTENT,
         type: MESSAGE_TYPE_RESPONSE,
       },
-      "*"
+      "*",
     );
   }
 
@@ -120,7 +124,7 @@ class ContentBridge {
         source: MESSAGE_SOURCE_CONTENT,
         type: MESSAGE_TYPE_READY,
       },
-      "*"
+      "*",
     );
   }
 
@@ -145,6 +149,7 @@ class ContentBridge {
     const providerInfo = getProviderInfo(import.meta.env.MODE);
     this.porto = Porto.create({
       announceProvider: providerInfo,
+      chains: [...Chains.all, worldchain, tempo],
       mode: Mode.dialog({
         host: `${getHost(import.meta.env.MODE)}/connect/`,
         renderer: Dialog.popup({
@@ -195,7 +200,7 @@ class ContentBridge {
 }
 
 function createProviderEventForwarders(
-  targetWindow: Window
+  targetWindow: Window,
 ): Array<[ProviderEventName, (payload: unknown) => void]> {
   return PROVIDER_EVENTS.map(
     (eventName): [ProviderEventName, (payload: unknown) => void] => [
@@ -208,10 +213,10 @@ function createProviderEventForwarders(
             source: MESSAGE_SOURCE_CONTENT,
             type: MESSAGE_TYPE_EVENT,
           },
-          "*"
+          "*",
         );
       },
-    ]
+    ],
   );
 }
 
