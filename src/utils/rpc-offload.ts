@@ -1,8 +1,10 @@
 import type { BridgeRequestMessage } from "@/utils/bridge";
 import {
   LARGE_RPC_METHODS,
+  canonicalSendTxPayload,
   cleanupExpiredRpcEntries,
   encodeRpcDataPlaceholder,
+  sha256Hex,
   storeRpcPayload,
 } from "./rpc-storage";
 import { isHex } from "viem";
@@ -44,11 +46,16 @@ async function maybeOffloadRpcValue(
 
     const params = value[0] as Record<string, unknown>;
     const data = typeof params?.data === "string" ? params.data : "";
+    const to = typeof params?.to === "string" ? params.to : "";
+    const txValue = typeof params?.value === "string" ? params.value : "";
 
     if (!isHex(data) || data === "0x") return { value, mutated: false };
 
     const token = await storeRpcPayload(data);
-    params.data = encodeRpcDataPlaceholder(extensionId, token);
+    const hash = await sha256Hex(
+      canonicalSendTxPayload({ to, value: txValue, data })
+    );
+    params.data = encodeRpcDataPlaceholder(extensionId, token, hash);
 
     return { value: [params], mutated: true };
   }
@@ -80,9 +87,10 @@ async function maybeOffloadRpcValue(
     if (payload.length === 0) return { value, mutated: false };
 
     const token = await storeRpcPayload(payload);
+    const hash = await sha256Hex(payload);
     params.calls = [
       {
-        data: encodeRpcDataPlaceholder(extensionId, token),
+        data: encodeRpcDataPlaceholder(extensionId, token, hash),
         to: calls[0].to,
         value: calls[0].value,
       },

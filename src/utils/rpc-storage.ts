@@ -24,16 +24,36 @@ export function createRpcStorageKey(token: string) {
   return `${RPC_STORAGE_KEY_PREFIX}${token}`;
 }
 
-export function encodeRpcDataPlaceholder(extensionId: string, token: string) {
-  return `${RPC_DATA_PLACEHOLDER_PREFIX}${extensionId}:${token}`;
+export function encodeRpcDataPlaceholder(
+  extensionId: string,
+  token: string,
+  hash: string
+) {
+  return `${RPC_DATA_PLACEHOLDER_PREFIX}${extensionId}:${token}:${hash}`;
 }
 
 export function decodeRpcDataPlaceholder(value: string) {
   if (!value.startsWith(RPC_DATA_PLACEHOLDER_PREFIX)) return null;
   const remainder = value.slice(RPC_DATA_PLACEHOLDER_PREFIX.length);
-  const [extensionId, token] = remainder.split(":");
-  if (!extensionId || !token) return null;
-  return { extensionId, token };
+  const [extensionId, token, hash] = remainder.split(":");
+  if (!extensionId || !token || !hash) return null;
+  return { extensionId, token, hash };
+}
+
+export function canonicalSendTxPayload(input: {
+  to: string;
+  value: string;
+  data: string;
+}) {
+  return JSON.stringify({ to: input.to, value: input.value, data: input.data });
+}
+
+export async function sha256Hex(input: string) {
+  const bytes = new TextEncoder().encode(input);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 export async function storeRpcPayload(serialized: string) {
