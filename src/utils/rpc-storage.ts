@@ -1,3 +1,5 @@
+import { sha256, stringToBytes } from "viem";
+
 export const RPC_STORAGE_KEY_PREFIX = "splits:rpc:";
 export const RPC_STORAGE_MESSAGE_TYPE = "splits-connect:getStoredRpcPayload";
 export const RPC_STORAGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -48,12 +50,8 @@ export function canonicalSendTxPayload(input: {
   return JSON.stringify({ to: input.to, value: input.value, data: input.data });
 }
 
-export async function sha256Hex(input: string) {
-  const bytes = new TextEncoder().encode(input);
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+export function sha256Hex(input: string) {
+  return sha256(stringToBytes(input));
 }
 
 export async function storeRpcPayload(serialized: string) {

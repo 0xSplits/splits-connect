@@ -52,7 +52,7 @@ async function maybeOffloadRpcValue(
     if (!isHex(data) || data === "0x") return { value, mutated: false };
 
     const token = await storeRpcPayload(data);
-    const hash = await sha256Hex(
+    const hash = sha256Hex(
       canonicalSendTxPayload({ to, value: txValue, data })
     );
     params.data = encodeRpcDataPlaceholder(extensionId, token, hash);
@@ -87,7 +87,7 @@ async function maybeOffloadRpcValue(
     if (payload.length === 0) return { value, mutated: false };
 
     const token = await storeRpcPayload(payload);
-    const hash = await sha256Hex(payload);
+    const hash = sha256Hex(payload);
     params.calls = [
       {
         data: encodeRpcDataPlaceholder(extensionId, token, hash),
