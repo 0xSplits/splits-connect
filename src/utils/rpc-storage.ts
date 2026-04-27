@@ -42,6 +42,10 @@ export function decodeRpcDataPlaceholder(value: string) {
   return { extensionId, token, hash };
 }
 
+// MUST match canonicalSendTxPayload in 0xSplits/splits-teams →
+// app/connect/lib/extension.ts. Drift here silently invalidates the hash
+// on every transaction. Pinned by golden-fixture tests in
+// splits-teams/app/connect/lib/extension.test.ts.
 export function canonicalSendTxPayload(input: {
   to: string;
   value: string;
