@@ -1,3 +1,5 @@
+import { sha256, stringToBytes } from "viem";
+
 export const RPC_STORAGE_KEY_PREFIX = "splits:rpc:";
 export const RPC_STORAGE_MESSAGE_TYPE = "splits-connect:getStoredRpcPayload";
 export const RPC_STORAGE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -24,16 +26,36 @@ export function createRpcStorageKey(token: string) {
   return `${RPC_STORAGE_KEY_PREFIX}${token}`;
 }
 
-export function encodeRpcDataPlaceholder(extensionId: string, token: string) {
-  return `${RPC_DATA_PLACEHOLDER_PREFIX}${extensionId}:${token}`;
+export function encodeRpcDataPlaceholder(
+  extensionId: string,
+  token: string,
+  hash: string
+) {
+  return `${RPC_DATA_PLACEHOLDER_PREFIX}${extensionId}:${token}:${hash}`;
 }
 
 export function decodeRpcDataPlaceholder(value: string) {
   if (!value.startsWith(RPC_DATA_PLACEHOLDER_PREFIX)) return null;
   const remainder = value.slice(RPC_DATA_PLACEHOLDER_PREFIX.length);
-  const [extensionId, token] = remainder.split(":");
-  if (!extensionId || !token) return null;
-  return { extensionId, token };
+  const [extensionId, token, hash] = remainder.split(":");
+  if (!extensionId || !token || !hash) return null;
+  return { extensionId, token, hash };
+}
+
+// MUST match canonicalSendTxPayload in 0xSplits/splits-teams →
+// app/connect/lib/extension.ts. Drift here silently invalidates the hash
+// on every transaction. Pinned by golden-fixture tests in
+// splits-teams/app/connect/lib/extension.test.ts.
+export function canonicalSendTxPayload(input: {
+  to: string;
+  value: string;
+  data: string;
+}) {
+  return JSON.stringify({ to: input.to, value: input.value, data: input.data });
+}
+
+export function sha256Hex(input: string) {
+  return sha256(stringToBytes(input));
 }
 
 export async function storeRpcPayload(serialized: string) {
