@@ -1,5 +1,6 @@
 import {
   SESSION_INFO_STORAGE_KEY,
+  isSessionInfoFresh,
   type SessionInfo,
 } from "@/utils/session-info";
 
@@ -21,8 +22,10 @@ async function readSessionInfo(): Promise<SessionInfo | null> {
 }
 
 function render(target: HTMLElement, sessionInfo: SessionInfo | null) {
+  const fresh =
+    sessionInfo && isSessionInfoFresh(sessionInfo) ? sessionInfo : null;
   target.replaceChildren(
-    sessionInfo ? renderSignedIn(sessionInfo.user) : cloneTemplate("signed-out")
+    fresh ? renderSignedIn(fresh.user) : cloneTemplate("signed-out")
   );
 }
 
@@ -39,12 +42,13 @@ function renderSignedIn(user: SessionInfo["user"]) {
   // The fallback initial shows until the avatar image actually loads; a
   // broken or missing URL never swaps it out.
   const image = view.querySelector<HTMLImageElement>(".avatar-image");
-  if (image && user.avatarUrl) {
+  const fallback = view.querySelector<HTMLElement>(".avatar-fallback");
+  if (image && fallback && user.avatarUrl) {
     image.addEventListener(
       "load",
       () => {
         image.hidden = false;
-        image.previousElementSibling?.remove();
+        fallback.remove();
       },
       { once: true }
     );

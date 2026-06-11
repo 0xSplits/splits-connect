@@ -5,6 +5,12 @@
 export const SESSION_INFO_STORAGE_KEY = "splits:session-info";
 export const SESSION_INFO_MESSAGE_TYPE = "splits-connect:setSessionInfo";
 
+// The popup treats stored info older than this as signed out. The Teams app
+// re-pushes on every load, so the only sessions that age out are ones that
+// ended while no Teams tab was open (expiry, remote logout, cleared cookies)
+// — without this, those would display user details indefinitely.
+export const SESSION_INFO_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
 const MAX_FIELD_LENGTH = 256;
 
 export type SessionInfo = {
@@ -15,6 +21,13 @@ export type SessionInfo = {
   };
   updatedAt: number;
 };
+
+export function isSessionInfoFresh(
+  sessionInfo: SessionInfo,
+  now = Date.now()
+) {
+  return now - sessionInfo.updatedAt <= SESSION_INFO_MAX_AGE_MS;
+}
 
 export function isSessionInfoMessage(message: unknown) {
   return (

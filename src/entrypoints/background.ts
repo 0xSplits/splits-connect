@@ -102,9 +102,16 @@ namespace RpcStorageBridge {
 
 // Lets the Splits Teams app keep the popup's session display in sync. The app
 // posts `{ type: "splits-connect:setSessionInfo", sessionInfo }` to its own
-// window after the connect flow completes, and `sessionInfo: null` on
-// sign-out; the content script relays it here. Sender pages are re-checked
-// against the Teams origin before anything is stored.
+// window whenever auth state resolves, and `sessionInfo: null` when it
+// resolves signed out; the content script relays it here. Sender pages are
+// re-checked against the Teams origin before anything is stored.
+//
+// Spoofing is accepted by design: any script running on the Teams origin
+// (third-party JS, other extensions' content scripts) can post this message
+// and repaint the popup's display strings. The payload is sanitized below
+// and the popup renders text only, so there is no injection path and nothing
+// privileged to reach — and anything running on that origin can already read
+// the real session from the page.
 namespace SessionInfoBridge {
   export function register() {
     browser.runtime.onMessage.addListener(handleMessage);
