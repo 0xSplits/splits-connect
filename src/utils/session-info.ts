@@ -1,3 +1,7 @@
+// MUST match the message sent by 0xSplits/splits-teams →
+// utils/splitsConnectExtension.ts. The Teams app posts this message to its
+// own window; the content script relays it to the background, which stores
+// the sanitized result for the popup.
 export const SESSION_INFO_STORAGE_KEY = "splits:session-info";
 export const SESSION_INFO_MESSAGE_TYPE = "splits-connect:setSessionInfo";
 

@@ -101,14 +101,16 @@ namespace RpcStorageBridge {
 }
 
 // Lets the Splits Teams app keep the popup's session display in sync. The app
-// sends `{ type: "splits-connect:setSessionInfo", sessionInfo }` after sign-in
-// or org/account changes, and `sessionInfo: null` on sign-out.
+// posts `{ type: "splits-connect:setSessionInfo", sessionInfo }` to its own
+// window after the connect flow completes, and `sessionInfo: null` on
+// sign-out; the content script relays it here. Sender pages are re-checked
+// against the Teams origin before anything is stored.
 namespace SessionInfoBridge {
   export function register() {
-    browser.runtime.onMessageExternal.addListener(handleExternalMessage);
+    browser.runtime.onMessage.addListener(handleMessage);
   }
 
-  function handleExternalMessage(
+  function handleMessage(
     message: unknown,
     sender: MessageSender,
     sendResponse: (response: unknown) => void
