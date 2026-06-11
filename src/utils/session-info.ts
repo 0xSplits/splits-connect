@@ -13,8 +13,6 @@ export type SessionInfo = {
     email?: string;
     avatarUrl?: string;
   };
-  org: { name: string } | null;
-  smartAccount: { name: string } | null;
   updatedAt: number;
 };
 
@@ -30,21 +28,9 @@ export function isSessionInfoMessage(message: unknown) {
 // signed out and clear the stored value.
 export function sanitizeSessionInfo(input: unknown): SessionInfo | null {
   if (typeof input !== "object" || input === null) return null;
-  const raw = input as {
-    user?: unknown;
-    org?: unknown;
-    smartAccount?: unknown;
-  };
-
-  const user = sanitizeUser(raw.user);
+  const user = sanitizeUser((input as { user?: unknown }).user);
   if (!user) return null;
-
-  return {
-    org: sanitizeNamed(raw.org),
-    smartAccount: sanitizeNamed(raw.smartAccount),
-    updatedAt: Date.now(),
-    user,
-  };
+  return { updatedAt: Date.now(), user };
 }
 
 function sanitizeUser(input: unknown): SessionInfo["user"] | null {
@@ -59,13 +45,6 @@ function sanitizeUser(input: unknown): SessionInfo["user"] | null {
     ...(email ? { email } : {}),
     ...(avatarUrl ? { avatarUrl } : {}),
   };
-}
-
-function sanitizeNamed(input: unknown): { name: string } | null {
-  if (typeof input !== "object" || input === null) return null;
-  const name = sanitizeText((input as { name?: unknown }).name);
-  if (!name) return null;
-  return { name };
 }
 
 function sanitizeText(input: unknown) {

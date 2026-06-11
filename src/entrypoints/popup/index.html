@@ -20,6 +20,28 @@
         >Learn more about Splits Connect &nearr;</a
       >
     </footer>
+
+    <template id="signed-out">
+      <h1 class="welcome-title">Welcome to Splits Connect!</h1>
+      <p class="welcome-text">
+        You do not need to do anything in this extension &mdash; when you
+        follow the connect flow on your application, you should see Splits as a
+        wallet option. If you do not, please reach out to
+        <a href="mailto:support@splits.org">support@splits.org</a>.
+      </p>
+    </template>
+
+    <template id="signed-in">
+      <div class="user">
+        <div class="avatar avatar-fallback"></div>
+        <img class="avatar avatar-image" alt="" hidden />
+        <div class="user-details">
+          <div class="user-name"></div>
+          <div class="user-email"></div>
+        </div>
+      </div>
+    </template>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

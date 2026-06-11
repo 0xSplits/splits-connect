@@ -6,6 +6,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   width: 320px;
   margin: 0;
@@ -106,35 +110,6 @@ body {
 
 .user-email {
   color: #777777;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.context {
-  margin-top: 14px;
-  padding: 10px 12px;
-  border: 1px solid #ececec;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.context-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.context-label {
-  flex-shrink: 0;
-  color: #777777;
-}
-
-.context-value {
-  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
