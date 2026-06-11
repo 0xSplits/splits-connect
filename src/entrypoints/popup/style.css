@@ -1,0 +1,141 @@
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 320px;
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #222222;
+  background: #ffffff;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #ececec;
+}
+
+.header-logo {
+  width: 20px;
+  height: 20px;
+}
+
+.header-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.content {
+  padding: 16px;
+}
+
+.footer {
+  padding: 12px 16px;
+  border-top: 1px solid #ececec;
+}
+
+.footer a,
+.content a {
+  color: #222222;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Signed-out state */
+
+.welcome-title {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.welcome-text {
+  margin: 0;
+  color: #555555;
+}
+
+/* Signed-in state */
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f0f0f0;
+}
+
+.avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #555555;
+}
+
+.user-details {
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-email {
+  color: #777777;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.context-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.context-label {
+  flex-shrink: 0;
+  color: #777777;
+}
+
+.context-value {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

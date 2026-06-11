@@ -2,12 +2,44 @@ import {
   RPC_STORAGE_MESSAGE_TYPE,
   consumeRpcPayload,
 } from "@/utils/rpc-storage";
+import {
+  SESSION_INFO_STORAGE_KEY,
+  isSessionInfoMessage,
+  sanitizeSessionInfo,
+} from "@/utils/session-info";
 import { getHost } from "../../utils";
 
 export default defineBackground(() => {
   RpcStorageBridge.register();
+  SessionInfoBridge.register();
   ContextMenu.create();
 });
+
+const allowedOrigin = new URL(getHost(import.meta.env.MODE)).origin;
+
+type MessageSender = Parameters<
+  Parameters<typeof browser.runtime.onMessageExternal.addListener>[0]
+>[1];
+
+function isAllowedSender(sender: MessageSender) {
+  const senderOrigin = getSenderOrigin(sender);
+  if (!senderOrigin) return false;
+  return senderOrigin === allowedOrigin;
+}
+
+function getSenderOrigin(sender: MessageSender) {
+  if (typeof sender.origin === "string" && sender.origin.length > 0) {
+    return sender.origin;
+  }
+  if (typeof sender.url === "string" && sender.url.length > 0) {
+    try {
+      return new URL(sender.url).origin;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
 
 namespace ContextMenu {
   export function create() {
@@ -27,11 +59,6 @@ namespace ContextMenu {
 }
 
 namespace RpcStorageBridge {
-  const allowedOrigin = new URL(getHost(import.meta.env.MODE)).origin;
-  type MessageSender = Parameters<
-    Parameters<typeof browser.runtime.onMessageExternal.addListener>[0]
-  >[1];
-
   export function register() {
     browser.runtime.onMessageExternal.addListener(handleExternalMessage);
   }
@@ -66,29 +93,49 @@ namespace RpcStorageBridge {
     );
   }
 
-  function isAllowedSender(sender: MessageSender) {
-    const senderOrigin = getSenderOrigin(sender);
-    if (!senderOrigin) return false;
-    return senderOrigin === allowedOrigin;
-  }
-
-  function getSenderOrigin(sender: MessageSender) {
-    if (typeof sender.origin === "string" && sender.origin.length > 0) {
-      return sender.origin;
-    }
-    if (typeof sender.url === "string" && sender.url.length > 0) {
-      try {
-        return new URL(sender.url).origin;
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  }
-
   async function fetchStoredPayload(token: string) {
     const value = await consumeRpcPayload(token);
     if (!value) return { ok: false };
     return { ok: true, value };
+  }
+}
+
+// Lets the Splits Teams app keep the popup's session display in sync. The app
+// sends `{ type: "splits-connect:setSessionInfo", sessionInfo }` after sign-in
+// or org/account changes, and `sessionInfo: null` on sign-out.
+namespace SessionInfoBridge {
+  export function register() {
+    browser.runtime.onMessageExternal.addListener(handleExternalMessage);
+  }
+
+  function handleExternalMessage(
+    message: unknown,
+    sender: MessageSender,
+    sendResponse: (response: unknown) => void
+  ) {
+    if (!isSessionInfoMessage(message)) return undefined;
+    if (!isAllowedSender(sender)) {
+      sendResponse({ ok: false });
+      return undefined;
+    }
+    const sessionInfo = sanitizeSessionInfo(
+      (message as { sessionInfo?: unknown }).sessionInfo
+    );
+    void persistSessionInfo(sessionInfo)
+      .then(() => sendResponse({ ok: true }))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+
+  async function persistSessionInfo(
+    sessionInfo: ReturnType<typeof sanitizeSessionInfo>
+  ) {
+    if (!sessionInfo) {
+      await browser.storage.local.remove(SESSION_INFO_STORAGE_KEY);
+      return;
+    }
+    await browser.storage.local.set({
+      [SESSION_INFO_STORAGE_KEY]: sessionInfo,
+    });
   }
 }
