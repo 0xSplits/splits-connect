@@ -4,15 +4,15 @@ import {
   type SessionInfo,
 } from "@/utils/session-info";
 
-const root = document.getElementById("app");
-if (root) {
-  void readSessionInfo().then((sessionInfo) => render(root, sessionInfo));
+const session = document.getElementById("session");
+if (session) {
+  void readSessionInfo().then((sessionInfo) => render(session, sessionInfo));
   browser.storage.local.onChanged.addListener((changes) => {
     if (!(SESSION_INFO_STORAGE_KEY in changes)) return;
     const next = changes[SESSION_INFO_STORAGE_KEY]?.newValue as
       | SessionInfo
       | undefined;
-    render(root, next ?? null);
+    render(session, next ?? null);
   });
 }
 
@@ -21,16 +21,23 @@ async function readSessionInfo(): Promise<SessionInfo | null> {
   return (stored[SESSION_INFO_STORAGE_KEY] as SessionInfo | undefined) ?? null;
 }
 
+// The welcome message is static in the HTML and always visible; this only
+// fills (or hides) the "Signed in as" card below it.
 function render(target: HTMLElement, sessionInfo: SessionInfo | null) {
   const fresh =
     sessionInfo && isSessionInfoFresh(sessionInfo) ? sessionInfo : null;
-  target.replaceChildren(
-    fresh ? renderSignedIn(fresh.user) : cloneTemplate("signed-out")
-  );
+  if (!fresh) {
+    target.replaceChildren();
+    target.hidden = true;
+    return;
+  }
+  target.replaceChildren(renderUser(fresh.user));
+  target.hidden = false;
 }
 
-function renderSignedIn(user: SessionInfo["user"]) {
-  const view = cloneTemplate("signed-in");
+function renderUser(user: SessionInfo["user"]) {
+  const template = document.getElementById("signed-in") as HTMLTemplateElement;
+  const view = template.content.cloneNode(true) as DocumentFragment;
 
   setText(view, ".user-name", user.name ?? user.email ?? "");
   if (user.name && user.email) setText(view, ".user-email", user.email);
@@ -56,11 +63,6 @@ function renderSignedIn(user: SessionInfo["user"]) {
   }
 
   return view;
-}
-
-function cloneTemplate(id: string) {
-  const template = document.getElementById(id) as HTMLTemplateElement;
-  return template.content.cloneNode(true) as DocumentFragment;
 }
 
 function setText(view: DocumentFragment, selector: string, text: string) {

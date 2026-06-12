@@ -11,7 +11,16 @@
       <img class="header-logo" src="/logo.svg" alt="" />
       <span class="header-title">Splits Connect</span>
     </header>
-    <main id="app" class="content"></main>
+    <main class="content">
+      <h1 class="welcome-title">Welcome to Splits Connect!</h1>
+      <p class="welcome-text">
+        You do not need to do anything in this extension &mdash; when you
+        follow the connect flow on your application, you should see Splits as a
+        wallet option. If you do not, please reach out to
+        <a href="mailto:support@splits.org">support@splits.org</a>.
+      </p>
+      <section id="session" class="session" hidden></section>
+    </main>
     <footer class="footer">
       <a
         href="https://www.notion.so/splits/Connecting-to-other-apps-29af7c3c8eff802fb110e7b9aa316488?source=copy_link"
@@ -21,17 +30,8 @@
       >
     </footer>
 
-    <template id="signed-out">
-      <h1 class="welcome-title">Welcome to Splits Connect!</h1>
-      <p class="welcome-text">
-        You do not need to do anything in this extension &mdash; when you
-        follow the connect flow on your application, you should see Splits as a
-        wallet option. If you do not, please reach out to
-        <a href="mailto:support@splits.org">support@splits.org</a>.
-      </p>
-    </template>
-
     <template id="signed-in">
+      <h2 class="session-label">Signed in as</h2>
       <div class="user">
         <div class="avatar avatar-fallback"></div>
         <img class="avatar avatar-image" alt="" hidden />
