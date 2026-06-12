@@ -73,9 +73,9 @@ body {
 /* Signed-in card */
 
 .session {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #ececec;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ececec;
 }
 
 .session-label {
