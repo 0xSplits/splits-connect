@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Splits Connect</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <header class="header">
+      <img class="header-logo" src="/logo.svg" alt="" />
+      <span class="header-title">Splits Connect</span>
+    </header>
+    <main class="content">
+      <section id="session" class="session" hidden></section>
+      <p class="welcome-text">
+        This extension allows you to connect Splits to third-party
+        applications. There is nothing you need to do here. If Splits doesn't
+        show up in the application's wallet list, or you have any other
+        questions, please reach out to
+        <a href="mailto:support@splits.org">support@splits.org</a>.
+      </p>
+    </main>
+    <footer class="footer">
+      <a
+        href="https://www.notion.so/splits/Connecting-to-other-apps-29af7c3c8eff802fb110e7b9aa316488?source=copy_link"
+        target="_blank"
+        rel="noreferrer"
+        >Learn more about Splits Connect &nearr;</a
+      >
+    </footer>
+
+    <template id="signed-in">
+      <h2 class="session-label">Signed in as</h2>
+      <div class="user">
+        <div class="avatar avatar-fallback"></div>
+        <img class="avatar avatar-image" alt="" hidden />
+        <div class="user-details">
+          <div class="user-name"></div>
+          <div class="user-email"></div>
+        </div>
+      </div>
+    </template>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

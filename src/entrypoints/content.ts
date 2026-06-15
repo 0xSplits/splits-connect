@@ -14,6 +14,10 @@ import {
 } from "@/utils/provider-events";
 import { getProviderInfo } from "@/utils/provider-info";
 import { maybeOffloadLargeRpc } from "@/utils/rpc-offload";
+import {
+  SESSION_INFO_MESSAGE_TYPE,
+  isSessionInfoMessage,
+} from "@/utils/session-info";
 import { Chains, Dialog, Mode, Porto } from "@splits/porto";
 import { tempo, worldchain } from "viem/chains";
 import { getHost, getRelay } from "../../utils";
@@ -22,10 +26,32 @@ export default defineContentScript({
   main() {
     const bridge = new ContentBridge(window);
     bridge.start();
+    startSessionInfoRelay(window);
   },
   matches: ["https://*/*", "http://localhost/*"],
   runAt: "document_start",
 });
+
+// Relays session info posted by the Splits Teams app to the background
+// script, which persists it for the popup. Only attached on the Teams
+// origin; the background re-checks the sender origin before storing.
+function startSessionInfoRelay(targetWindow: Window) {
+  const allowedOrigin = new URL(getHost(import.meta.env.MODE)).origin;
+  if (targetWindow.location.origin !== allowedOrigin) return;
+  targetWindow.addEventListener("message", (event) => {
+    if (event.source !== targetWindow) return;
+    if (event.origin !== allowedOrigin) return;
+    if (!isSessionInfoMessage(event.data)) return;
+    browser.runtime
+      .sendMessage({
+        sessionInfo: (event.data as { sessionInfo?: unknown }).sessionInfo,
+        type: SESSION_INFO_MESSAGE_TYPE,
+      })
+      .catch(() => {
+        // Background may be restarting; the next update will land.
+      });
+  });
+}
 
 class ContentBridge {
   private readonly pendingRequests: BridgeRequestMessage[] = [];
