@@ -32,8 +32,8 @@ export default defineContentScript({
   runAt: "document_start",
 });
 
-// Relays session info posted by the Splits Teams app to the background
-// script, which persists it for the popup. Only attached on the Teams
+// Relays session info posted by the Splits app to the background
+// script, which persists it for the popup. Only attached on the Splits
 // origin; the background re-checks the sender origin before storing.
 function startSessionInfoRelay(targetWindow: Window) {
   const allowedOrigins = getAllowedOrigins(import.meta.env.MODE);

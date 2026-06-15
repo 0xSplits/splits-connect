@@ -1,6 +1,6 @@
 # Splits Connect Extension
 
-A browser extension to connect Splits Teams to apps.
+A browser extension to connect Splits to apps.
 
 ## Documentation
 

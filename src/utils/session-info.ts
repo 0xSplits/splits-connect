@@ -1,13 +1,13 @@
 // MUST match the message sent by 0xSplits/splits-teams →
-// utils/splitsConnectExtension.ts. The Teams app posts this message to its
+// utils/splitsConnectExtension.ts. The Splits app posts this message to its
 // own window; the content script relays it to the background, which stores
 // the sanitized result for the popup.
 export const SESSION_INFO_STORAGE_KEY = "splits:session-info";
 export const SESSION_INFO_MESSAGE_TYPE = "splits-connect:setSessionInfo";
 
-// The popup treats stored info older than this as signed out. The Teams app
+// The popup treats stored info older than this as signed out. The Splits app
 // re-pushes on every load, so the only sessions that age out are ones that
-// ended while no Teams tab was open (expiry, remote logout, cleared cookies)
+// ended while no Splits tab was open (expiry, remote logout, cleared cookies)
 // — without this, those would display user details indefinitely.
 export const SESSION_INFO_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
