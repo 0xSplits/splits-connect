@@ -18,6 +18,9 @@ export default defineConfig({
       },
     };
   },
+  zip: {
+    artifactTemplate: "{{name}}-{{version}}-{{mode}}-{{browser}}.zip",
+  },
   vite: () => ({
     build: {
       rollupOptions: {
