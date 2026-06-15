@@ -20,7 +20,7 @@ import {
 } from "@/utils/session-info";
 import { Chains, Dialog, Mode, Porto } from "@splits/porto";
 import { tempo, worldchain } from "viem/chains";
-import { getHost, getRelay } from "../../utils";
+import { getAllowedOrigins, getHost, getRelay } from "../../utils";
 
 export default defineContentScript({
   main() {
@@ -36,11 +36,11 @@ export default defineContentScript({
 // script, which persists it for the popup. Only attached on the Teams
 // origin; the background re-checks the sender origin before storing.
 function startSessionInfoRelay(targetWindow: Window) {
-  const allowedOrigin = new URL(getHost(import.meta.env.MODE)).origin;
-  if (targetWindow.location.origin !== allowedOrigin) return;
+  const allowedOrigins = getAllowedOrigins(import.meta.env.MODE);
+  if (!allowedOrigins.includes(targetWindow.location.origin)) return;
   targetWindow.addEventListener("message", (event) => {
     if (event.source !== targetWindow) return;
-    if (event.origin !== allowedOrigin) return;
+    if (!allowedOrigins.includes(event.origin)) return;
     if (!isSessionInfoMessage(event.data)) return;
     browser.runtime
       .sendMessage({
