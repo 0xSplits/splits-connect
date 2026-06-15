@@ -1,5 +1,5 @@
 import { defineConfig } from "wxt";
-import { getHost, getName } from "./utils";
+import { getAllowedOrigins, getName } from "./utils";
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
@@ -14,7 +14,7 @@ export default defineConfig({
       },
       // Allow your domain to message the extension
       externally_connectable: {
-        matches: [`${getHost(mode)}/*`],
+        matches: getAllowedOrigins(mode).map((origin) => `${origin}/*`),
       },
     };
   },

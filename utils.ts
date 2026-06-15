@@ -12,6 +12,24 @@ export const getHost = (mode: string) => {
   }
 };
 
+const getAppHost = (mode: string) => {
+  switch (mode) {
+    case "production":
+      return "https://app.splits.org";
+    case "dev":
+      return null;
+    default:
+      return `https://app.${mode}.splits.org`;
+  }
+};
+
+export const getAllowedOrigins = (mode: string) => {
+  const origins = [new URL(getHost(mode)).origin];
+  const appHost = getAppHost(mode);
+  if (appHost) origins.push(new URL(appHost).origin);
+  return origins;
+};
+
 export const getRelay = (mode: string) => {
   switch (mode) {
     case "dev":

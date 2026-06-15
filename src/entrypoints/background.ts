@@ -7,7 +7,7 @@ import {
   isSessionInfoMessage,
   sanitizeSessionInfo,
 } from "@/utils/session-info";
-import { getHost } from "../../utils";
+import { getAllowedOrigins } from "../../utils";
 
 export default defineBackground(() => {
   RpcStorageBridge.register();
@@ -15,7 +15,7 @@ export default defineBackground(() => {
   ContextMenu.create();
 });
 
-const allowedOrigin = new URL(getHost(import.meta.env.MODE)).origin;
+const allowedOrigins = getAllowedOrigins(import.meta.env.MODE);
 
 type MessageSender = Parameters<
   Parameters<typeof browser.runtime.onMessageExternal.addListener>[0]
@@ -24,7 +24,7 @@ type MessageSender = Parameters<
 function isAllowedSender(sender: MessageSender) {
   const senderOrigin = getSenderOrigin(sender);
   if (!senderOrigin) return false;
-  return senderOrigin === allowedOrigin;
+  return allowedOrigins.includes(senderOrigin);
 }
 
 function getSenderOrigin(sender: MessageSender) {
