@@ -20,7 +20,7 @@ pnpm dev
 You can use the following modes when building the extension.
 
 1. dev - `http://localhost:3001`
-2. production - `https://teams.splits.org`
+2. production - `https://app.splits.org`
 3. staging - `https://teams.staging.splits.org`
 4. testing - `https://teams.testing.splits.org`
 
