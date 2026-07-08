@@ -52,7 +52,7 @@ namespace ContextMenu {
     browser.contextMenus.onClicked.addListener(async (info) => {
       if (info.menuItemId === "app")
         browser.tabs.create({
-          url: "https://teams.splits.org",
+          url: "https://app.splits.org",
         });
     });
   }
