@@ -35,3 +35,5 @@ pnpm zip:all
 ```
 
 This will create a folder for each environment in the `.output` directory. You can then upload the compressed files to the github releases page for that release version. For reference, see the [releases page](https://github.com/0xSplits/splits-connect/releases).
+
+Take the production build and submit it to the Chrome Web Store under the `chrome-web-store@splits.org` publisher.
