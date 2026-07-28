@@ -14,13 +14,14 @@ pnpm dev              # launches Chrome with the extension, dev mode (app at htt
 pnpm compile          # typecheck (tsc --noEmit)
 pnpm build            # production build
 pnpm zip:all          # release zips for all four modes into .output/
+pnpm release          # zip:all + GitHub release with zips attached (scripts/release.sh)
 ```
 
 Requires a `.env` (see `.env.sample`) providing `WXT_NAMESPACE_UUID`.
 
 ## Modes
 
-Everything is parameterized by WXT build mode: `dev`, `production`, `staging`, `testing`. Root `utils.ts` is the single source for mode → host / relay / allowed-origins / extension-name mapping (dev → `http://localhost:3001`, production → `https://app.splits.org`, else `https://app.<mode>.splits.org`). Code reads the mode via `import.meta.env.MODE`. Release: bump `version` in `package.json`, `pnpm zip:all`, upload to GitHub releases; production build goes to the Chrome Web Store.
+Everything is parameterized by WXT build mode: `dev`, `production`, `staging`, `testing`. Root `utils.ts` is the single source for mode → host / relay / allowed-origins / extension-name mapping (dev → `http://localhost:3001`, production → `https://app.splits.org`, else `https://app.<mode>.splits.org`). Code reads the mode via `import.meta.env.MODE`. Release: bump `version` in `package.json`, run `pnpm release` (creates the GitHub release with all zips); then manually upload the production zip to the Chrome Web Store.
 
 ## Architecture
 

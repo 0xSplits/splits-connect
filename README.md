@@ -31,9 +31,9 @@ Firstly, update the version in the `package.json` file.
 To release the extension, you can use the following command.
 
 ```bash
-pnpm zip:all
+pnpm release
 ```
 
-This will create a folder for each environment in the `.output` directory. You can then upload the compressed files to the github releases page for that release version. For reference, see the [releases page](https://github.com/0xSplits/splits-connect/releases).
+This zips all environments and publishes a GitHub release (tag `v<version>`) with the zips attached as assets. For reference, see the [releases page](https://github.com/0xSplits/splits-connect/releases).
 
 Take the production build and submit it to the Chrome Web Store under the `chrome-web-store@splits.org` publisher.

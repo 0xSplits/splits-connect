@@ -15,6 +15,7 @@
     "zip:staging": "wxt zip --mode staging",
     "zip:testing": "wxt zip --mode testing",
     "zip:firefox": "wxt zip -b firefox",
+    "release": "./scripts/release.sh",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
   },
