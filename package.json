@@ -1,7 +1,7 @@
 {
   "name": "Splits Connect",
   "description": "An extension to connect any app to Splits",
-  "version": "1.4",
+  "version": "1.5",
   "type": "module",
   "scripts": {
     "dev": "wxt --mode dev",
@@ -27,6 +27,6 @@
   "dependencies": {
     "@splits/porto": "0.2.39",
     "uuid": "^13.0.0",
-    "viem": "^2.47.10"
+    "viem": "^2.55.2"
   }
 }
