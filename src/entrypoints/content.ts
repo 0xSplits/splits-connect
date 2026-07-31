@@ -19,7 +19,7 @@ import {
   isSessionInfoMessage,
 } from "@/utils/session-info";
 import { Chains, Dialog, Mode, Porto } from "@splits/porto";
-import { robinhood, tempo, worldchain } from "viem/chains";
+import { hyperEvm, robinhood, tempo, worldchain } from "viem/chains";
 import { getAllowedOrigins, getHost, getRelay } from "../../utils";
 
 export default defineContentScript({
@@ -175,7 +175,7 @@ class ContentBridge {
     const providerInfo = getProviderInfo(import.meta.env.MODE);
     this.porto = Porto.create({
       announceProvider: providerInfo,
-      chains: [...Chains.all, worldchain, tempo, robinhood],
+      chains: [...Chains.all, worldchain, tempo, hyperEvm, robinhood],
       mode: Mode.dialog({
         host: `${getHost(import.meta.env.MODE)}/connect/`,
         renderer: Dialog.popup({
