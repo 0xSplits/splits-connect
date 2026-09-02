@@ -8,7 +8,7 @@ export default defineConfig({
       name: getName(mode),
       permissions: ["contextMenus", "storage"],
       host_permissions: ["https://*/*"],
-      description: "An extension to connect any app to Splits.",
+      description: "Use your Splits accounts in any app.",
       action: {
         default_title: getName(mode),
       },
