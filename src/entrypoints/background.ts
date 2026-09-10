@@ -7,11 +7,19 @@ import {
   isSessionInfoMessage,
   sanitizeSessionInfo,
 } from "@/utils/session-info";
+import {
+  CONNECTION_NETWORKS_STORAGE_KEY,
+  isConnectionNetworksMessage,
+  mergeConnectionNetworks,
+  sanitizeConnectionNetworks,
+  type ConnectionNetworks,
+} from "@/utils/site-network";
 import { getAllowedOrigins } from "../../utils";
 
 export default defineBackground(() => {
   RpcStorageBridge.register();
   SessionInfoBridge.register();
+  ConnectionNetworksBridge.register();
   ContextMenu.create();
 });
 
@@ -145,6 +153,57 @@ namespace SessionInfoBridge {
     }
     await browser.storage.local.set({
       [SESSION_INFO_STORAGE_KEY]: sessionInfo,
+    });
+  }
+}
+
+// Lets the Splits app tell the popup which networks a connected site's team
+// has enabled. The app posts
+// `{ type: "splits-connect:setConnectionNetworks", connectionNetworks }` with
+// one `domain → chainIds` entry per connection of the team it currently shows;
+// the content script relays it here. Entries merge into the stored map so
+// connections to other teams keep their last known list.
+//
+// Spoofing is accepted by design, as for SessionInfoBridge: the worst a script
+// on the Splits origin can do is change which networks the popup offers, and
+// Porto still refuses any chain it was not configured with.
+namespace ConnectionNetworksBridge {
+  export function register() {
+    browser.runtime.onMessage.addListener(handleMessage);
+  }
+
+  function handleMessage(
+    message: unknown,
+    sender: MessageSender,
+    sendResponse: (response: unknown) => void
+  ) {
+    if (!isConnectionNetworksMessage(message)) return undefined;
+    if (!isAllowedSender(sender)) {
+      sendResponse({ ok: false });
+      return undefined;
+    }
+    const incoming = sanitizeConnectionNetworks(
+      (message as { connectionNetworks?: unknown }).connectionNetworks
+    );
+    void persistConnectionNetworks(incoming)
+      .then(() => sendResponse({ ok: true }))
+      .catch(() => sendResponse({ ok: false }));
+    return true;
+  }
+
+  async function persistConnectionNetworks(incoming: ConnectionNetworks) {
+    const stored = await browser.storage.local.get(
+      CONNECTION_NETWORKS_STORAGE_KEY
+    );
+    const current =
+      (stored[CONNECTION_NETWORKS_STORAGE_KEY] as
+        | ConnectionNetworks
+        | undefined) ?? {};
+    await browser.storage.local.set({
+      [CONNECTION_NETWORKS_STORAGE_KEY]: mergeConnectionNetworks(
+        current,
+        incoming
+      ),
     });
   }
 }

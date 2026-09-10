@@ -13,6 +13,7 @@
     </header>
     <main class="content">
       <section id="session" class="session" hidden></section>
+      <section id="network" class="network" hidden></section>
       <p class="welcome-text">
         This extension allows you to connect Splits to third-party
         applications. There is nothing you need to do here. If Splits doesn't
@@ -40,6 +41,14 @@
           <div class="user-email"></div>
         </div>
       </div>
+    </template>
+
+    <template id="site-network">
+      <h2 class="session-label">Network for this site</h2>
+      <div class="network-site"></div>
+      <select class="network-select" aria-label="Network for this site"></select>
+      <p class="network-hint"></p>
+      <p class="network-error" hidden></p>
     </template>
 
     <script type="module" src="./main.ts"></script>

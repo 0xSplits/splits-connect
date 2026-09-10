@@ -123,3 +123,43 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Network for this site */
+
+.network {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ececec;
+}
+
+.network-site {
+  margin-bottom: 8px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.network-select {
+  width: 100%;
+  padding: 6px 8px;
+  font: inherit;
+  color: #222222;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+}
+
+.network-select:disabled {
+  color: #999999;
+}
+
+.network-hint {
+  margin: 8px 0 0;
+  color: #777777;
+}
+
+.network-error {
+  margin: 8px 0 0;
+  color: #b42318;
+}
