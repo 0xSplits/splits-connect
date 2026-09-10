@@ -18,6 +18,7 @@ import { isSessionInfoMessage } from "@/utils/session-info";
 import {
   CONNECTION_NETWORKS_STORAGE_KEY,
   getSiteDomain,
+  isConnectionNetworksEntryFresh,
   isConnectionNetworksMessage,
   isSiteNetworkGetMessage,
   isSiteNetworkSwitchMessage,
@@ -371,7 +372,9 @@ async function readTeamChainIds(domain: string): Promise<number[] | null> {
   const networks = stored[CONNECTION_NETWORKS_STORAGE_KEY] as
     | ConnectionNetworks
     | undefined;
-  return networks?.[domain]?.chainIds ?? null;
+  const entry = networks?.[domain];
+  if (!entry || !isConnectionNetworksEntryFresh(entry)) return null;
+  return entry.chainIds;
 }
 
 function waitForDocumentReady(): Promise<void> {

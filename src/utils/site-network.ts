@@ -22,6 +22,11 @@ const MAX_CHAIN_IDS_PER_ENTRY = 64;
 // Starting point with no data yet. A user connecting to more than 200 distinct
 // sites is unheard of; raise it if support ever hears otherwise.
 const MAX_STORED_CONNECTIONS = 200;
+// Same window as SESSION_INFO_MAX_AGE_MS. The Splits app re-publishes an
+// org's connections on every load with that org active, so only lists for
+// orgs the user stopped opening age out, and the popup then falls back to the
+// wallet's chains instead of narrowing by a list nobody refreshed.
+export const CONNECTION_NETWORKS_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type ConnectionNetworksEntry = {
   chainIds: number[];
@@ -123,6 +128,13 @@ export function sanitizeConnectionNetworks(
   );
 }
 
+export function isConnectionNetworksEntryFresh(
+  entry: ConnectionNetworksEntry,
+  now = Date.now()
+) {
+  return now - entry.updatedAt <= CONNECTION_NETWORKS_MAX_AGE_MS;
+}
+
 // Incoming entries win over stored ones for the same domain. The oldest
 // entries are dropped when the map outgrows the cap.
 export function mergeConnectionNetworks(
@@ -147,7 +159,7 @@ export function resolveSiteNetworkOptions(input: {
 }): { chainIds: number[]; source: SiteNetworkOptionsSource } {
   const { walletChainIds, teamChainIds, siteChainIds } = input;
   const teamKnown = teamChainIds !== null;
-  const siteKnown = siteChainIds !== null && siteChainIds.length > 0;
+  const siteKnown = siteChainIds !== null;
 
   const chainIds = walletChainIds.filter(
     (chainId) =>
@@ -166,7 +178,9 @@ export function toSiteNetworkOption(chain: Chain): SiteNetworkOption {
 }
 
 // Porto's `wallet_connect` carries chain ids as hex on the wire; dapps calling
-// the provider directly have been seen sending plain numbers too.
+// the provider directly have been seen sending plain numbers too. Returns null
+// for a missing or empty list: a dapp that names no chain has not said which
+// it supports, so the list never carries an empty "supports nothing".
 export function parseRequestedChainIds(params: unknown): number[] | null {
   if (!Array.isArray(params)) return null;
   const chainIds = (params[0] as { chainIds?: unknown } | undefined)?.chainIds;

@@ -13,6 +13,22 @@ import {
   type SiteNetworkSwitchResponse,
 } from "@/utils/site-network";
 
+// Copy for the empty state and for the hint under the dropdown, by where the
+// option list came from.
+const NO_OPTIONS_MESSAGE: Record<SiteNetworkOptionsSource, string> = {
+  "team-and-site": "No network is supported by both this site and your team.",
+  team: "Your team has no networks enabled.",
+  site: "This site requested no network that Splits supports.",
+  wallet: "Splits supports no network on this site.",
+};
+
+const OPTIONS_HINT: Record<SiteNetworkOptionsSource, string> = {
+  "team-and-site": "Networks supported by both this site and your team.",
+  team: "Networks enabled for your team.",
+  site: "Networks this site requested.",
+  wallet: "Networks supported by Splits. Open Splits to narrow this to your team.",
+};
+
 const session = document.getElementById("session");
 if (session) {
   void readSessionInfo().then((sessionInfo) => render(session, sessionInfo));
@@ -85,22 +101,6 @@ function setText(view: DocumentFragment, selector: string, text: string) {
   const element = view.querySelector(selector);
   if (element) element.textContent = text;
 }
-
-// Copy for the empty state and for the hint under the dropdown, by where the
-// option list came from.
-const NO_OPTIONS_MESSAGE: Record<SiteNetworkOptionsSource, string> = {
-  "team-and-site": "No network is supported by both this site and your team.",
-  team: "Your team has no networks enabled.",
-  site: "This site requested no network that Splits supports.",
-  wallet: "Splits supports no network on this site.",
-};
-
-const OPTIONS_HINT: Record<SiteNetworkOptionsSource, string> = {
-  "team-and-site": "Networks supported by both this site and your team.",
-  team: "Networks enabled for your team.",
-  site: "Networks this site requested.",
-  wallet: "Networks supported by Splits. Open Splits to narrow this to your team.",
-};
 
 // Asks the content script of the active tab. Any failure (no content script
 // on the page, a tab the extension cannot reach) reads as "not connected".

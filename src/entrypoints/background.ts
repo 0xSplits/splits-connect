@@ -185,11 +185,17 @@ namespace ConnectionNetworksBridge {
     const incoming = sanitizeConnectionNetworks(
       (message as { connectionNetworks?: unknown }).connectionNetworks
     );
-    void persistConnectionNetworks(incoming)
+    // Two Splits tabs restoring at once (one per active org) post together.
+    // Each merge reads then writes the whole map, so they run one at a time
+    // or the later write drops the earlier tab's entries.
+    pendingWrite = pendingWrite
+      .then(() => persistConnectionNetworks(incoming))
       .then(() => sendResponse({ ok: true }))
       .catch(() => sendResponse({ ok: false }));
     return true;
   }
+
+  let pendingWrite: Promise<void> = Promise.resolve();
 
   async function persistConnectionNetworks(incoming: ConnectionNetworks) {
     const stored = await browser.storage.local.get(
