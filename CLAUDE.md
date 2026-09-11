@@ -29,11 +29,14 @@ Three scripts communicate via `window.postMessage`, with message shapes and type
 
 1. **`src/entrypoints/inpage.content.ts`** — runs in the page's MAIN world at `document_start`. Instantiates `SplitsEthereumProvider` (`src/providers/splits-ethereum-provider.ts`), assigns it to `window.ethereum`/`window.splitsEthereum`, and announces via EIP-6963. The provider serializes each `request()` into a bridge message; requests queue until the content bridge answers the ready handshake (polled every 250ms).
 
-2. **`src/entrypoints/content.ts`** — isolated-world content script hosting `ContentBridge`. Lazily creates the Porto instance (dialog popup hosted at `<host>/connect/`, relay from `getRelay`) on first request, forwards provider events back to the page, and relays session-info messages (only on the Splits origin) to the background.
+2. **`src/entrypoints/content.ts`** — isolated-world content script hosting `ContentBridge`. Lazily creates the Porto instance (dialog popup hosted at `<host>/connect/`, relay from `getRelay`) on first request, forwards provider events back to the page, answers the popup's per-site network requests (`src/utils/site-network.ts`, over `browser.tabs.sendMessage`), and relays the Splits app's session-info and connection-networks messages (only on the Splits origin) to the background.
 
-3. **`src/entrypoints/background.ts`** — registers two message bridges plus a context menu:
+3. **`src/entrypoints/background.ts`** — registers three message bridges plus a context menu:
    - `RpcStorageBridge` answers `onMessageExternal` requests from the Splits app (origins restricted via `externally_connectable` in `wxt.config.ts` + a sender-origin re-check) to fetch offloaded RPC payloads.
    - `SessionInfoBridge` persists sanitized session info to `browser.storage.local` for the popup (`src/entrypoints/popup/`), which renders it read-only.
+   - `ConnectionNetworksBridge` merges the networks each connected site's team has enabled (posted by the Splits app per site domain) into `browser.storage.local`; the dapp tab's content script reads its own entry.
+
+**Per-site network control** (`src/utils/site-network.ts`): the popup asks the active tab's content script for its connection state and, when Porto holds an account for the site, shows a "Network for this site" dropdown. Options are the wallet's chains narrowed by the team's enabled networks (from `ConnectionNetworksBridge`) and by the chains the dapp requested in `wallet_connect`, when either is known. A selection goes through Porto's own `wallet_switchEthereumChain`, so the dapp receives the standard `chainChanged`; dapp-initiated switches keep working unchanged.
 
 **Large RPC offload** (`src/utils/rpc-offload.ts` + `rpc-storage.ts`): oversized `eth_sendTransaction`/`wallet_sendCalls` data fields are stored in `browser.storage.local` under a token and replaced with a `0xsplitsconnectkey:<extensionId>:<token>:<hash>` placeholder before hitting Porto; the Splits app fetches the real payload back through `RpcStorageBridge` (single-use, 5-minute TTL). This keeps huge calldata out of postMessage/URL limits.
 

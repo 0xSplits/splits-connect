@@ -14,11 +14,23 @@ import {
 } from "@/utils/provider-events";
 import { getProviderInfo } from "@/utils/provider-info";
 import { maybeOffloadLargeRpc } from "@/utils/rpc-offload";
+import { isSessionInfoMessage } from "@/utils/session-info";
 import {
-  SESSION_INFO_MESSAGE_TYPE,
-  isSessionInfoMessage,
-} from "@/utils/session-info";
+  CONNECTION_NETWORKS_STORAGE_KEY,
+  getSiteDomain,
+  isConnectionNetworksEntryFresh,
+  isConnectionNetworksMessage,
+  isSiteNetworkGetMessage,
+  isSiteNetworkSwitchMessage,
+  parseRequestedChainIds,
+  resolveSiteNetworkOptions,
+  toSiteNetworkOption,
+  type ConnectionNetworksByDomain,
+  type SiteNetworkState,
+  type SiteNetworkSwitchResponse,
+} from "@/utils/site-network";
 import { Chains, Dialog, Mode, Porto } from "@splits/porto";
+import { hexToNumber, numberToHex } from "viem";
 import { hyperEvm, megaeth, robinhood, tempo, worldchain } from "viem/chains";
 import { getAllowedOrigins, getHost, getRelay } from "../../utils";
 
@@ -26,30 +38,30 @@ export default defineContentScript({
   main() {
     const bridge = new ContentBridge(window);
     bridge.start();
-    startSessionInfoRelay(window);
+    startSplitsAppRelay(window);
   },
   matches: ["https://*/*", "http://localhost/*"],
   runAt: "document_start",
 });
 
-// Relays session info posted by the Splits app to the background
-// script, which persists it for the popup. Only attached on the Splits
-// origin; the background re-checks the sender origin before storing.
-function startSessionInfoRelay(targetWindow: Window) {
+// Relays the messages the Splits app posts to its own window (session info,
+// connection networks) to the background script, which persists them for the
+// popup and the dapp tabs. Only attached on the Splits origin; the background
+// re-checks the sender origin before storing.
+function startSplitsAppRelay(targetWindow: Window) {
   const allowedOrigins = getAllowedOrigins(import.meta.env.MODE);
   if (!allowedOrigins.includes(targetWindow.location.origin)) return;
   targetWindow.addEventListener("message", (event) => {
     if (event.source !== targetWindow) return;
     if (!allowedOrigins.includes(event.origin)) return;
-    if (!isSessionInfoMessage(event.data)) return;
-    browser.runtime
-      .sendMessage({
-        sessionInfo: (event.data as { sessionInfo?: unknown }).sessionInfo,
-        type: SESSION_INFO_MESSAGE_TYPE,
-      })
-      .catch(() => {
-        // Background may be restarting; the next update will land.
-      });
+    if (
+      !isSessionInfoMessage(event.data) &&
+      !isConnectionNetworksMessage(event.data)
+    )
+      return;
+    browser.runtime.sendMessage(event.data).catch(() => {
+      // Background may be restarting; the next update will land.
+    });
   });
 }
 
@@ -62,6 +74,10 @@ class ContentBridge {
   private porto: ReturnType<typeof Porto.create> | null = null;
   private destroyed = false;
   private initializing: Promise<void> | null = null;
+  // Chains the dapp asked for in its last `wallet_connect`. Null when it never
+  // said, which is the case for every dapp that connects via
+  // `eth_requestAccounts`.
+  private siteChainIds: number[] | null = null;
 
   constructor(private readonly targetWindow: Window) {
     this.eventHandlers = createProviderEventForwarders(targetWindow);
@@ -95,10 +111,30 @@ class ContentBridge {
     }
   };
 
+  // Answers the popup, which reaches the active tab's content script over
+  // browser.tabs.sendMessage. Returning true keeps the channel open for the
+  // async reply.
+  private readonly handlePopupMessage = (
+    message: unknown,
+    _sender: unknown,
+    sendResponse: (response: unknown) => void
+  ) => {
+    if (isSiteNetworkGetMessage(message)) {
+      void this.getSiteNetworkState().then(sendResponse);
+      return true;
+    }
+    if (isSiteNetworkSwitchMessage(message)) {
+      void this.switchSiteNetwork(message.chainId).then(sendResponse);
+      return true;
+    }
+    return undefined;
+  };
+
   start() {
     this.targetWindow.addEventListener("message", this.handleRequest);
     this.targetWindow.addEventListener("unload", this.cleanup, { once: true });
     browser.storage.local.onChanged.addListener(this.handleStorageChange);
+    browser.runtime.onMessage.addListener(this.handlePopupMessage);
     this.postBridgeReady();
   }
 
@@ -108,6 +144,7 @@ class ContentBridge {
     this.targetWindow.removeEventListener("message", this.handleRequest);
     this.targetWindow.removeEventListener("unload", this.cleanup);
     browser.storage.local.onChanged.removeListener(this.handleStorageChange);
+    browser.runtime.onMessage.removeListener(this.handlePopupMessage);
     this.detachProviderEvents();
     this.porto?.destroy();
     this.provider = null;
@@ -116,6 +153,7 @@ class ContentBridge {
   };
 
   private async processRequest(message: BridgeRequestMessage) {
+    this.recordSiteChainIds(message.payload);
     try {
       if (!this.provider) throw new Error("Provider not ready");
       const normalizedPayload = await maybeOffloadLargeRpc(
@@ -126,6 +164,66 @@ class ContentBridge {
       this.postResponse(message.id, { result });
     } catch (error) {
       this.postResponse(message.id, { error: serializeError(error) });
+    }
+  }
+
+  private recordSiteChainIds(payload: BridgeRequestMessage["payload"]) {
+    if (payload.method === "wallet_connect")
+      this.siteChainIds = parseRequestedChainIds(payload.params);
+    if (payload.method === "wallet_disconnect") this.siteChainIds = null;
+  }
+
+  // A site counts as connected once the dapp has used the provider and Porto
+  // holds an account for it. A page whose dapp never touched the provider
+  // reports disconnected even if Porto persisted an account for the origin.
+  // Porto answers `eth_accounts` and `eth_chainId` from its store, so neither
+  // leaves the page.
+  private async getSiteNetworkState(): Promise<SiteNetworkState> {
+    if (!this.porto || !this.provider) return { connected: false };
+    const currentChainId = await this.provider
+      .request({ method: "eth_accounts" })
+      .then(() => this.provider?.request({ method: "eth_chainId" }))
+      .catch(() => null);
+    if (!currentChainId) return { connected: false };
+
+    const chains = this.porto.config.chains;
+    const currentChain = chains.find(
+      (chain) => chain.id === hexToNumber(currentChainId),
+    );
+    if (!currentChain) return { connected: false };
+
+    const domain = getSiteDomain(this.targetWindow.location.hostname);
+    const { chainIds, source } = resolveSiteNetworkOptions({
+      walletChainIds: chains.map((chain) => chain.id),
+      teamChainIds: await readTeamChainIds(domain),
+      siteChainIds: this.siteChainIds,
+    });
+    return {
+      connected: true,
+      current: toSiteNetworkOption(currentChain),
+      domain,
+      options: chains
+        .filter((chain) => chainIds.includes(chain.id))
+        .map(toSiteNetworkOption),
+      source,
+    };
+  }
+
+  // Goes through Porto's own provider so the switch is the same one a dapp
+  // request produces: the store updates and `chainChanged` reaches the page
+  // through the event forwarders.
+  private async switchSiteNetwork(
+    chainId: number
+  ): Promise<SiteNetworkSwitchResponse> {
+    if (!this.provider) return { ok: false, message: "Site is not connected." };
+    try {
+      await this.provider.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: numberToHex(chainId) }],
+      });
+      return { ok: true, state: await this.getSiteNetworkState() };
+    } catch (error) {
+      return { ok: false, message: serializeError(error).message };
     }
   }
 
@@ -265,6 +363,18 @@ function serializeError(error: unknown): BridgeSerializedError {
   return {
     message: String(error),
   };
+}
+
+async function readTeamChainIds(domain: string): Promise<number[] | null> {
+  const stored = await browser.storage.local.get(
+    CONNECTION_NETWORKS_STORAGE_KEY,
+  );
+  const networks = stored[CONNECTION_NETWORKS_STORAGE_KEY] as
+    | ConnectionNetworksByDomain
+    | undefined;
+  const entry = networks?.[domain];
+  if (!entry || !isConnectionNetworksEntryFresh(entry)) return null;
+  return entry.chainIds;
 }
 
 function waitForDocumentReady(): Promise<void> {
