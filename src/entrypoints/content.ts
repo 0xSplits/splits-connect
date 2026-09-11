@@ -25,7 +25,7 @@ import {
   parseRequestedChainIds,
   resolveSiteNetworkOptions,
   toSiteNetworkOption,
-  type ConnectionNetworks,
+  type ConnectionNetworksByDomain,
   type SiteNetworkState,
   type SiteNetworkSwitchResponse,
 } from "@/utils/site-network";
@@ -370,7 +370,7 @@ async function readTeamChainIds(domain: string): Promise<number[] | null> {
     CONNECTION_NETWORKS_STORAGE_KEY,
   );
   const networks = stored[CONNECTION_NETWORKS_STORAGE_KEY] as
-    | ConnectionNetworks
+    | ConnectionNetworksByDomain
     | undefined;
   const entry = networks?.[domain];
   if (!entry || !isConnectionNetworksEntryFresh(entry)) return null;

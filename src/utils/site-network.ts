@@ -35,7 +35,7 @@ export type ConnectionNetworksEntry = {
 
 // Keyed by site domain: the hostname without a leading "www.", which is the
 // key the Splits app uses for its own connection store.
-export type ConnectionNetworks = Record<string, ConnectionNetworksEntry>;
+export type ConnectionNetworksByDomain = Record<string, ConnectionNetworksEntry>;
 
 export type SiteNetworkOption = {
   chainId: number;
@@ -112,9 +112,9 @@ export function isSiteNetworkSwitchMessage(
 export function sanitizeConnectionNetworks(
   input: unknown,
   now = Date.now()
-): ConnectionNetworks {
+): ConnectionNetworksByDomain {
   if (typeof input !== "object" || input === null) return {};
-  return Object.entries(input).reduce<ConnectionNetworks>(
+  return Object.entries(input).reduce<ConnectionNetworksByDomain>(
     (acc, [domain, chainIds]) => {
       if (!isDomain(domain) || !Array.isArray(chainIds)) return acc;
       const uniqueChainIds = Array.from(new Set(chainIds.filter(isChainId)));
@@ -138,9 +138,9 @@ export function isConnectionNetworksEntryFresh(
 // Incoming entries win over stored ones for the same domain. The oldest
 // entries are dropped when the map outgrows the cap.
 export function mergeConnectionNetworks(
-  stored: ConnectionNetworks,
-  incoming: ConnectionNetworks
-): ConnectionNetworks {
+  stored: ConnectionNetworksByDomain,
+  incoming: ConnectionNetworksByDomain
+): ConnectionNetworksByDomain {
   const merged = { ...stored, ...incoming };
   const entries = Object.entries(merged).sort(
     ([, a], [, b]) => b.updatedAt - a.updatedAt

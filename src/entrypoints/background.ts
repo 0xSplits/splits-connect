@@ -12,7 +12,7 @@ import {
   isConnectionNetworksMessage,
   mergeConnectionNetworks,
   sanitizeConnectionNetworks,
-  type ConnectionNetworks,
+  type ConnectionNetworksByDomain,
 } from "@/utils/site-network";
 import { getAllowedOrigins } from "../../utils";
 
@@ -159,7 +159,7 @@ namespace SessionInfoBridge {
 
 // Lets the Splits app tell the popup which networks a connected site's team
 // has enabled. The app posts
-// `{ type: "splits-connect:setConnectionNetworks", connectionNetworks }` with
+// `{ type: "splits-connect:setConnectionNetworks", chainIdsByDomain }` with
 // one `domain → chainIds` entry per connection of the team it currently shows;
 // the content script relays it here. Entries merge into the stored map so
 // connections to other teams keep their last known list.
@@ -183,7 +183,7 @@ namespace ConnectionNetworksBridge {
       return undefined;
     }
     const incoming = sanitizeConnectionNetworks(
-      (message as { connectionNetworks?: unknown }).connectionNetworks
+      (message as { chainIdsByDomain?: unknown }).chainIdsByDomain
     );
     // Two Splits tabs restoring at once (one per active org) post together.
     // Each merge reads then writes the whole map, so they run one at a time
@@ -197,13 +197,13 @@ namespace ConnectionNetworksBridge {
 
   let pendingWrite: Promise<void> = Promise.resolve();
 
-  async function persistConnectionNetworks(incoming: ConnectionNetworks) {
+  async function persistConnectionNetworks(incoming: ConnectionNetworksByDomain) {
     const stored = await browser.storage.local.get(
       CONNECTION_NETWORKS_STORAGE_KEY
     );
     const current =
       (stored[CONNECTION_NETWORKS_STORAGE_KEY] as
-        | ConnectionNetworks
+        | ConnectionNetworksByDomain
         | undefined) ?? {};
     await browser.storage.local.set({
       [CONNECTION_NETWORKS_STORAGE_KEY]: mergeConnectionNetworks(
