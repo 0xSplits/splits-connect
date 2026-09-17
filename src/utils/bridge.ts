@@ -5,6 +5,7 @@ export const MESSAGE_SOURCE_CONTENT = `${BRIDGE_NAMESPACE}:content`;
 export const MESSAGE_TYPE_REQUEST = `${BRIDGE_NAMESPACE}:request`;
 export const MESSAGE_TYPE_RESPONSE = `${BRIDGE_NAMESPACE}:response`;
 export const MESSAGE_TYPE_EVENT = `${BRIDGE_NAMESPACE}:event`;
+export const MESSAGE_TYPE_STATE = `${BRIDGE_NAMESPACE}:state`;
 export const MESSAGE_TYPE_READY = `${BRIDGE_NAMESPACE}:ready`;
 export const MESSAGE_TYPE_READY_REQUEST = `${BRIDGE_NAMESPACE}:ready-request`;
 
@@ -47,6 +48,14 @@ export type BridgeEventMessage = {
   type: typeof MESSAGE_TYPE_EVENT;
 };
 
+// Sets the page provider's synchronous fields without emitting an event.
+export type BridgeStateMessage = {
+  accounts: string[];
+  chainId: string;
+  source: typeof MESSAGE_SOURCE_CONTENT;
+  type: typeof MESSAGE_TYPE_STATE;
+};
+
 export type BridgeReadyMessage = {
   source: typeof MESSAGE_SOURCE_CONTENT;
   type: typeof MESSAGE_TYPE_READY;
@@ -87,6 +96,17 @@ export function isBridgeEventMessage(
     data !== null &&
     (data as BridgeEventMessage).type === MESSAGE_TYPE_EVENT &&
     (data as BridgeEventMessage).source === MESSAGE_SOURCE_CONTENT
+  );
+}
+
+export function isBridgeStateMessage(
+  data: unknown
+): data is BridgeStateMessage {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    (data as BridgeStateMessage).type === MESSAGE_TYPE_STATE &&
+    (data as BridgeStateMessage).source === MESSAGE_SOURCE_CONTENT
   );
 }
 

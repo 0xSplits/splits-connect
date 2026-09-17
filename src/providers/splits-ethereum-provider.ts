@@ -4,6 +4,7 @@ import {
   type BridgeEventMessage,
   type BridgeRequestPayload,
   type BridgeResponseMessage,
+  type BridgeStateMessage,
 } from "@/utils/bridge";
 import type { EIP1193Provider } from "viem";
 import {
@@ -145,6 +146,11 @@ export class SplitsEthereumProvider implements EIP1193Provider {
     if (isProviderEvent(message.event)) {
       this.emit(message.event, message.payload);
     }
+  }
+
+  handleState(message: BridgeStateMessage) {
+    this.selectedAddress = message.accounts[0] ?? null;
+    this.chainId = message.chainId;
   }
 
   markBridgeReady() {

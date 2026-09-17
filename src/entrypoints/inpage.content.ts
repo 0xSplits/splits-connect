@@ -4,6 +4,7 @@ import {
   isBridgeEventMessage,
   isBridgeReadyMessage,
   isBridgeResponseMessage,
+  isBridgeStateMessage,
 } from "@/utils/bridge";
 import { SplitsEthereumProvider } from "@/providers/splits-ethereum-provider";
 import { type ProviderInfo, getProviderInfo } from "@/utils/provider-info";
@@ -84,6 +85,10 @@ function setupBridgeHandshake(
     }
     if (isBridgeEventMessage(event.data)) {
       provider.handleEvent(event.data);
+      return;
+    }
+    if (isBridgeStateMessage(event.data)) {
+      provider.handleState(event.data);
       return;
     }
     if (

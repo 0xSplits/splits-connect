@@ -3,6 +3,7 @@ import {
   MESSAGE_TYPE_EVENT,
   MESSAGE_TYPE_READY,
   MESSAGE_TYPE_RESPONSE,
+  MESSAGE_TYPE_STATE,
   isBridgeReadyRequestMessage,
   isBridgeRequestMessage,
   type BridgeRequestMessage,
@@ -296,13 +297,16 @@ class ContentBridge {
     });
     this.provider = this.porto.provider;
     this.attachProviderEvents();
-    await this.publishRestoredSession();
-    this.flushPendingRequests();
+    try {
+      await this.publishRestoredSession();
+    } finally {
+      this.flushPendingRequests();
+    }
   }
 
-  // Porto only emits account and chain events for changes after its session has loaded.
-  // The page's provider fills `selectedAddress` and `chainId` from those events only, so a
-  // restored session stays invisible to it until something changes. Send the restored state once.
+  // Porto emits no event for a restored session, so the page provider's `selectedAddress` and
+  // `chainId` stay null. This sets them without an `accountsChanged` event, because wagmi's
+  // injected connector treats that event as a connect and undoes a disconnect made in the dapp.
   private async publishRestoredSession() {
     const provider = this.provider;
     if (!provider) return;
@@ -312,13 +316,15 @@ class ContentBridge {
       .catch(() => null);
     if (!accounts) return;
     const chainId = await provider.request({ method: "eth_chainId" });
-    this.forwardEvent("accountsChanged", accounts);
-    this.forwardEvent("chainChanged", chainId);
-  }
-
-  private forwardEvent(eventName: ProviderEventName, payload: unknown) {
-    const handler = this.eventHandlers.find(([name]) => name === eventName)?.[1];
-    handler?.(payload);
+    this.targetWindow.postMessage(
+      {
+        accounts,
+        chainId,
+        source: MESSAGE_SOURCE_CONTENT,
+        type: MESSAGE_TYPE_STATE,
+      },
+      "*",
+    );
   }
 
   private attachProviderEvents() {
