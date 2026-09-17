@@ -29,10 +29,16 @@ import {
   type SiteNetworkState,
   type SiteNetworkSwitchResponse,
 } from "@/utils/site-network";
-import { Chains, Dialog, Mode, Porto } from "@splits/porto";
+import { Chains, Dialog, Mode, Porto, Storage } from "@splits/porto";
 import { hexToNumber, numberToHex } from "viem";
 import { hyperEvm, megaeth, robinhood, tempo, worldchain } from "viem/chains";
 import { getAllowedOrigins, getHost, getRelay } from "../../utils";
+
+// Porto's default storage key. Keeping it preserves the sessions that earlier versions saved.
+const PORTO_STORAGE_KEY = "porto.store";
+// A guess with no measurements yet. Normal reads finish in a few ms; raise it if busy dapps log the warning below.
+const SESSION_READ_TIMEOUT_MS = 3_000;
+const SESSION_UNAVAILABLE = Symbol("session unavailable");
 
 export default defineContentScript({
   main() {
@@ -268,6 +274,7 @@ class ContentBridge {
 
   private async createPorto() {
     await waitForDocumentReady();
+    const storage = await createPreloadedStorage();
     if (this.destroyed || this.provider) return;
 
     const providerInfo = getProviderInfo(import.meta.env.MODE);
@@ -284,10 +291,34 @@ class ContentBridge {
         }),
       }),
       relay: getRelay(import.meta.env.MODE),
+      storage,
+      storageKey: PORTO_STORAGE_KEY,
     });
     this.provider = this.porto.provider;
     this.attachProviderEvents();
+    await this.publishRestoredSession();
     this.flushPendingRequests();
+  }
+
+  // Porto only emits account and chain events for changes after its session has loaded.
+  // The page's provider fills `selectedAddress` and `chainId` from those events only, so a
+  // restored session stays invisible to it until something changes. Send the restored state once.
+  private async publishRestoredSession() {
+    const provider = this.provider;
+    if (!provider) return;
+    // Porto rejects eth_accounts when this site has no saved session. There is nothing to publish then.
+    const accounts = await provider
+      .request({ method: "eth_accounts" })
+      .catch(() => null);
+    if (!accounts) return;
+    const chainId = await provider.request({ method: "eth_chainId" });
+    this.forwardEvent("accountsChanged", accounts);
+    this.forwardEvent("chainChanged", chainId);
+  }
+
+  private forwardEvent(eventName: ProviderEventName, payload: unknown) {
+    const handler = this.eventHandlers.find(([name]) => name === eventName)?.[1];
+    handler?.(payload);
   }
 
   private attachProviderEvents() {
@@ -375,6 +406,35 @@ async function readTeamChainIds(domain: string): Promise<number[] | null> {
   const entry = networks?.[domain];
   if (!entry || !isConnectionNetworksEntryFresh(entry)) return null;
   return entry.chainIds;
+}
+
+// Porto answers the dapp as disconnected when its IndexedDB read takes over 100 ms.
+// zustand's persist loads the session inside Porto.create when getItem returns a plain value,
+// so read the session here and hand it over synchronously on Porto's first read.
+async function createPreloadedStorage(): Promise<Storage.Storage> {
+  const storage = Storage.idb();
+  const saved = await Promise.race([
+    Promise.resolve(storage.getItem(PORTO_STORAGE_KEY)),
+    new Promise<typeof SESSION_UNAVAILABLE>((resolve) =>
+      setTimeout(() => resolve(SESSION_UNAVAILABLE), SESSION_READ_TIMEOUT_MS),
+    ),
+  ]).catch(() => SESSION_UNAVAILABLE);
+  if (saved === SESSION_UNAVAILABLE) {
+    // Porto then reads the session itself and can answer the first requests as disconnected.
+    console.warn("splits-connect: could not preload the saved session");
+    return storage;
+  }
+
+  let preloadServed = false;
+  return Storage.from({
+    ...storage,
+    getItem<value>(name: string) {
+      if (preloadServed || name !== PORTO_STORAGE_KEY)
+        return storage.getItem<value>(name);
+      preloadServed = true;
+      return saved as value | null;
+    },
+  });
 }
 
 function waitForDocumentReady(): Promise<void> {
