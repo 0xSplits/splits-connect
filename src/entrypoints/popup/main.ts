@@ -16,17 +16,17 @@ import {
 // Copy for the empty state and for the hint under the dropdown, by where the
 // option list came from.
 const NO_OPTIONS_MESSAGE_BY_SOURCE: Record<SiteNetworkOptionsSource, string> = {
-  "team-and-site": "No network is supported by both this site and your team.",
-  team: "Your team has no networks enabled.",
+  "team-and-site": "No network is supported by both this site and your workspace.",
+  team: "Your workspace has no networks enabled.",
   site: "This site requested no network that Splits supports.",
   wallet: "Splits supports no network on this site.",
 };
 
 const OPTIONS_HINT_BY_SOURCE: Record<SiteNetworkOptionsSource, string> = {
-  "team-and-site": "Networks supported by both this site and your team.",
-  team: "Networks enabled for your team.",
+  "team-and-site": "Networks supported by both this site and your workspace.",
+  team: "Networks enabled for your workspace.",
   site: "Networks this site requested.",
-  wallet: "Networks supported by Splits. Open Splits to narrow this to your team.",
+  wallet: "Networks supported by Splits. Open Splits to narrow this to your workspace.",
 };
 
 const session = document.getElementById("session");
