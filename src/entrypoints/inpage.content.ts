@@ -6,20 +6,27 @@ import {
   isBridgeResponseMessage,
 } from "@/utils/bridge";
 import { SplitsEthereumProvider } from "@/providers/splits-ethereum-provider";
+import { hasOpaqueOrigin } from "@/utils/frame";
 import { type ProviderInfo, getProviderInfo } from "@/utils/provider-info";
 
 export default defineContentScript({
   main() {
+    if (hasOpaqueOrigin()) return;
     const provider = new SplitsEthereumProvider();
     const providerInfo = getProviderInfo(import.meta.env.MODE);
     const { announceProvider, cleanup } = setupBridgeHandshake(
       provider,
       providerInfo
     );
-    injectProvider(provider);
+    // Iframes only get the EIP-6963 announcement. Claiming window.ethereum
+    // there would take embedded widgets away from the user's other wallets.
+    if (window === window.top) injectProvider(provider);
     announceProvider();
     window.addEventListener("unload", cleanup, { once: true });
   },
+  // Some apps render their wallet picker inside an iframe (e.g. Stripe's
+  // crypto checkout), so the provider must be announced in subframes too.
+  allFrames: true,
   matches: ["https://*/*", "http://localhost/*"],
   runAt: "document_start",
   world: "MAIN",

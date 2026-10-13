@@ -8,6 +8,7 @@ import {
   type BridgeRequestMessage,
   type BridgeSerializedError,
 } from "@/utils/bridge";
+import { hasOpaqueOrigin } from "@/utils/frame";
 import {
   PROVIDER_EVENTS,
   type ProviderEventName,
@@ -36,10 +37,13 @@ import { getAllowedOrigins, getHost, getRelay } from "../../utils";
 
 export default defineContentScript({
   main() {
+    if (hasOpaqueOrigin()) return;
     const bridge = new ContentBridge(window);
     bridge.start();
     startSplitsAppRelay(window);
   },
+  // Must run in the same frames as the inpage provider it bridges.
+  allFrames: true,
   matches: ["https://*/*", "http://localhost/*"],
   runAt: "document_start",
 });

@@ -102,8 +102,13 @@ function setText(view: DocumentFragment, selector: string, text: string) {
   if (element) element.textContent = text;
 }
 
-// Asks the content script of the active tab. Any failure (no content script
-// on the page, a tab the extension cannot reach) reads as "not connected".
+// The content scripts run in every frame, so without a frameId each iframe
+// would also answer (first reply wins) and act on network switches.
+const TOP_FRAME = { frameId: 0 };
+
+// Asks the content script of the active tab's top frame. Any failure (no
+// content script on the page, a tab the extension cannot reach) reads as "not
+// connected".
 async function readSiteNetworkState(): Promise<SiteNetworkState> {
   const tabId = await getActiveTabId();
   if (tabId === null) return { connected: false };
@@ -111,7 +116,11 @@ async function readSiteNetworkState(): Promise<SiteNetworkState> {
     const message: SiteNetworkGetMessage = {
       type: SITE_NETWORK_GET_MESSAGE_TYPE,
     };
-    const state = (await browser.tabs.sendMessage(tabId, message)) as
+    const state = (await browser.tabs.sendMessage(
+      tabId,
+      message,
+      TOP_FRAME
+    )) as
       | SiteNetworkState
       | undefined;
     return state ?? { connected: false };
@@ -130,7 +139,11 @@ async function switchSiteNetwork(
       chainId,
       type: SITE_NETWORK_SWITCH_MESSAGE_TYPE,
     };
-    const response = (await browser.tabs.sendMessage(tabId, message)) as
+    const response = (await browser.tabs.sendMessage(
+      tabId,
+      message,
+      TOP_FRAME
+    )) as
       | SiteNetworkSwitchResponse
       | undefined;
     return response ?? { ok: false, message: "The site did not respond." };
