@@ -24,6 +24,16 @@ You can use the following modes when building the extension.
 3. staging - `https://app.staging.splits.org`
 4. testing - `https://app.testing.splits.org`
 
+## Adding a network
+
+Every network the Splits app lists must work here. Porto only switches to chains it was created with: `Chains.all` from `@splits/porto`, plus the extra chains in `src/entrypoints/content.ts`.
+
+1. If the chain isn't in `Chains.all`, add its viem chain to `chains` in `src/entrypoints/content.ts`. MegaETH is the precedent (#18).
+2. If viem's chain has no RPC URLs, give it one there: `{ ...chain, rpcUrls: { default: { http: ['<public rpc>'] } } }`. Porto's default transport is `http()`, which throws `UrlRequiredError` for a chain without a URL.
+3. [Release](#release). Chrome Web Store review can take days, so release early. Releasing before the Splits app lists the network is harmless: the popup only offers networks the team has turned on.
+
+The Splits app's `/connect/` dialog builds its chains from the server's network registry, so it needs no change.
+
 ## Release
 
 Firstly, update the version in the `package.json` file.
